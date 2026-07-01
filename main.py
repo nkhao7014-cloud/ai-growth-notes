@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from ai_client import analyze_note_with_tags
+from ai_client import analyze_note_with_tags, extract_tags
 
 load_dotenv()
 
@@ -42,14 +42,11 @@ class NoteInput(BaseModel):
 
 @app.post("/api/notes")
 def create_note(note: NoteInput):
-
-    # AI 自动整理
     result = analyze_note_with_tags(note.text)
 
     ai_text = result["summary"]
     tags = result["tags"]
 
-    # 保存数据库
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
 
@@ -83,7 +80,6 @@ def create_note(note: NoteInput):
 
 @app.get("/api/notes")
 def list_notes():
-
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
 
@@ -98,32 +94,60 @@ def list_notes():
     """)
 
     rows = cur.fetchall()
-
     conn.close()
 
-    notes = []
+    return format_notes(rows)
 
-    for row in rows:
 
-        tags = []
+@app.get("/api/search")
+def search_notes(q: str = ""):
+    keyword = q.strip()
 
-        try:
-            from ai_client import extract_tags
-            tags = extract_tags(row[2])
-        except Exception:
-            pass
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
 
-        notes.append(
-            {
-                "id": row[0],
-                "raw_text": row[1],
-                "ai_summary": row[2],
-                "tags": tags,
-                "created_at": row[3]
-            }
-        )
+    if keyword:
+        search_word = f"%{keyword}%"
 
-    return notes
+        cur.execute("""
+            SELECT
+                id,
+                raw_text,
+                ai_summary,
+                created_at
+            FROM notes
+            WHERE raw_text LIKE ?
+               OR ai_summary LIKE ?
+            ORDER BY id DESC
+        """, (search_word, search_word))
+    else:
+        cur.execute("""
+            SELECT
+                id,
+                raw_text,
+                ai_summary,
+                created_at
+            FROM notes
+            ORDER BY id DESC
+        """)
+
+    rows = cur.fetchall()
+    conn.close()
+
+    return format_notes(rows)
+
+
+def format_notes(rows):
+    return [
+        {
+            "id": row[0],
+            "raw_text": row[1],
+            "ai_summary": row[2],
+            "tags": extract_tags(row[2]),
+            "created_at": row[3]
+        }
+        for row in rows
+    ]
 
 
 app.mount(

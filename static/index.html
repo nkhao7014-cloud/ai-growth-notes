@@ -48,6 +48,27 @@
       box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
     }
 
+    .search-box {
+      margin-bottom: 24px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 16px 18px;
+      border: 1px solid #dbeafe;
+      border-radius: 16px;
+      font-size: 16px;
+      outline: none;
+      background: #ffffff;
+      color: #0f172a;
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.06);
+    }
+
+    .search-box input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    }
+
     .panel {
       background: rgba(255,255,255,0.9);
       border: 1px solid #e2e8f0;
@@ -150,6 +171,31 @@
       border-left: 5px solid #2563eb;
     }
 
+    .tags {
+      margin: 10px 0 16px;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 6px 12px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      background: #dbeafe;
+      color: #2563eb;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .empty {
+      padding: 32px;
+      text-align: center;
+      color: #64748b;
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px dashed #cbd5e1;
+    }
+
     @media (max-width: 600px) {
       .logo { font-size: 34px; }
       .container { padding-top: 32px; }
@@ -164,6 +210,15 @@
       <div class="logo">🌱 AI Growth Notes</div>
       <div class="subtitle">每天记录一点成长，未来收获一本书</div>
       <div class="date" id="todayDate"></div>
+    </div>
+
+    <div class="search-box">
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="🔍 搜索成长记录，例如 FastAPI / Prompt / AI"
+        oninput="searchNotes()"
+      />
     </div>
 
     <div class="panel">
@@ -209,6 +264,7 @@
       });
 
       document.getElementById("noteInput").value = "";
+      document.getElementById("searchInput").value = "";
       loadNotes();
     }
 
@@ -216,18 +272,47 @@
       const res = await fetch("/api/notes");
       const notes = await res.json();
 
+      renderNotes(notes);
+    }
+
+    async function searchNotes() {
+      const keyword = document.getElementById("searchInput").value.trim();
+
+      const url = keyword
+        ? `/api/search?q=${encodeURIComponent(keyword)}`
+        : "/api/notes";
+
+      const res = await fetch(url);
+      const notes = await res.json();
+
+      renderNotes(notes);
+    }
+
+    function renderNotes(notes) {
       const notesList = document.getElementById("notesList");
       notesList.innerHTML = "";
+
+      if (notes.length === 0) {
+        notesList.innerHTML = `<div class="empty">没有找到相关成长记录。</div>`;
+        return;
+      }
 
       notes.forEach(note => {
         const card = document.createElement("div");
         card.className = "note-card";
+
+        const tagsHtml = note.tags && note.tags.length > 0
+          ? note.tags.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join("")
+          : `<span class="tag">#未分类</span>`;
 
         card.innerHTML = `
           <div class="note-date">📅 ${note.created_at}</div>
 
           <div class="section-label">📝 原始笔记</div>
           <div class="raw">${escapeHtml(note.raw_text)}</div>
+
+          <div class="section-label">🏷 标签</div>
+          <div class="tags">${tagsHtml}</div>
 
           <div class="section-label">🤖 AI 自动整理</div>
           <div class="ai">${escapeHtml(note.ai_summary)}</div>
@@ -238,7 +323,7 @@
     }
 
     function escapeHtml(text) {
-      return text
+      return String(text || "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;");
