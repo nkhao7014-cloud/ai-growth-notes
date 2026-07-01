@@ -20,3 +20,6 @@ Thumbs.db
 
 # macOS
 .DS_Store
+
+# tree
+tree.txt
