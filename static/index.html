@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Growth Notes</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Microsoft YaHei", Arial, sans-serif;
+      background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+      color: #0f172a;
+    }
+
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 48px 20px 80px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .logo {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      color: #2563eb;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      color: #64748b;
+      margin-bottom: 12px;
+    }
+
+    .date {
+      display: inline-block;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #475569;
+      font-size: 14px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .panel {
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #e2e8f0;
+      border-radius: 24px;
+      padding: 26px;
+      box-shadow: 0 20px 50px rgba(37, 99, 235, 0.10);
+      margin-bottom: 30px;
+    }
+
+    .input-title,
+    .notes-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #1e40af;
+      margin-bottom: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 170px;
+      border: 1px solid #dbeafe;
+      border-radius: 18px;
+      padding: 18px;
+      outline: none;
+      resize: vertical;
+      font-size: 16px;
+      line-height: 1.8;
+      color: #0f172a;
+      background: #f8fafc;
+    }
+
+    textarea:focus {
+      border-color: #2563eb;
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    }
+
+    textarea::placeholder {
+      color: #94a3b8;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #2563eb, #4f46e5);
+      color: white;
+      font-size: 17px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
+    }
+
+    .note-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      padding: 24px;
+      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
+      margin-bottom: 20px;
+      line-height: 1.8;
+    }
+
+    .note-date {
+      color: #64748b;
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+
+    .section-label {
+      font-weight: 800;
+      color: #1e40af;
+      margin-top: 14px;
+      margin-bottom: 8px;
+    }
+
+    .raw,
+    .ai {
+      white-space: pre-wrap;
+      padding: 16px;
+      border-radius: 16px;
+      font-size: 15px;
+    }
+
+    .raw {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .ai {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-left: 5px solid #2563eb;
+    }
+
+    @media (max-width: 600px) {
+      .logo { font-size: 34px; }
+      .container { padding-top: 32px; }
+      .panel { padding: 20px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">🌱 AI Growth Notes</div>
+      <div class="subtitle">每天记录一点成长，未来收获一本书</div>
+      <div class="date" id="todayDate"></div>
+    </div>
+
+    <div class="panel">
+      <div class="input-title">📚 今天学了什么？</div>
+      <textarea
+        id="noteInput"
+        placeholder="例如：今天学习了 FastAPI，理解了 API 和前端页面之间的关系，也意识到一个产品可以先从最小版本开始做。"
+      ></textarea>
+      <button onclick="saveNote()">✨ 保存并 AI 整理</button>
+    </div>
+
+    <div class="notes-title">📖 我的成长记录</div>
+    <div id="notesList"></div>
+  </div>
+
+  <script>
+    function setTodayDate() {
+      const now = new Date();
+      const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+
+      const text =
+        "📅 " +
+        now.getFullYear() + "年" +
+        (now.getMonth() + 1) + "月" +
+        now.getDate() + "日 " +
+        weekdays[now.getDay()];
+
+      document.getElementById("todayDate").innerText = text;
+    }
+
+    async function saveNote() {
+      const text = document.getElementById("noteInput").value.trim();
+
+      if (!text) {
+        alert("请先输入内容");
+        return;
+      }
+
+      await fetch("/api/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+
+      document.getElementById("noteInput").value = "";
+      loadNotes();
+    }
+
+    async function loadNotes() {
+      const res = await fetch("/api/notes");
+      const notes = await res.json();
+
+      const notesList = document.getElementById("notesList");
+      notesList.innerHTML = "";
+
+      notes.forEach(note => {
+        const card = document.createElement("div");
+        card.className = "note-card";
+
+        card.innerHTML = `
+          <div class="note-date">📅 ${note.created_at}</div>
+
+          <div class="section-label">📝 原始笔记</div>
+          <div class="raw">${escapeHtml(note.raw_text)}</div>
+
+          <div class="section-label">🤖 AI 自动整理</div>
+          <div class="ai">${escapeHtml(note.ai_summary)}</div>
+        `;
+
+        notesList.appendChild(card);
+      });
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    setTodayDate();
+    loadNotes();
+  </script>
+</body>
+</html>
