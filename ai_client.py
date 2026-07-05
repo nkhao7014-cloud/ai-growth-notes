@@ -10,12 +10,12 @@ AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash")
 
 
 # ==========================
-# 对外统一接口
+# 外部向け共通インターフェース
 # ==========================
 
 def analyze_note(content: str) -> str:
     """
-    返回AI整理后的文本
+    AIで整理したテキストを返す
     """
     prompt = build_note_prompt(content)
     return generate_text(prompt)
@@ -23,7 +23,7 @@ def analyze_note(content: str) -> str:
 
 def analyze_note_with_tags(content: str) -> dict:
     """
-    返回结构化结果
+    構造化された結果を返す
     """
     ai_text = analyze_note(content)
 
@@ -39,32 +39,32 @@ def analyze_note_with_tags(content: str) -> dict:
 
 def build_note_prompt(content: str) -> str:
     return f"""
-请将下面的成长笔记整理成固定格式。
+以下の成長ノートを指定された形式に整理してください。
 
-要求：
+要件：
 
-1. 提炼主题
-2. 提取3~5个关键词
-3. 生成标签（必须使用 #标签 格式）
-4. 总结今天的收获
-5. 给出下一步建议
+1. テーマを要約する
+2. キーワードを3〜5個抽出する
+3. タグを生成する（必ず #タグ の形式を使用する）
+4. 今日の学びをまとめる
+5. 次のステップを提案する
 
-成长笔记：
+成長ノート：
 
 {content}
 
-请严格按照下面格式输出：
+必ず以下の形式で出力してください：
 
-主题：
-关键词：
-标签：
-今日总结：
-后续学习建议：
+テーマ：
+キーワード：
+タグ：
+今日のまとめ：
+今後の学習提案：
 """
 
 
 # ==========================
-# AI调用
+# AI呼び出し
 # ==========================
 
 def generate_text(prompt: str) -> str:
@@ -89,24 +89,24 @@ def generate_text(prompt: str) -> str:
 def generate_by_mock(prompt: str) -> str:
 
     return """
-主题：
+テーマ：
 AI Growth Notes
 
-关键词：
-AI、学习、成长
+キーワード：
+AI、学習、成長
 
-标签：
+タグ：
 #AI
-#学习
-#成长
+#学習
+#成長
 
-今日总结：
-这是 Mock AI 自动整理后的结果。
+今日のまとめ：
+これは Mock AI が自動整理した結果です。
 
-系统已经将你的成长笔记整理成结构化内容。
+成長ノートを構造化された内容に整理しました。
 
-后续学习建议：
-继续坚持每天记录学习内容、工作经验和思考，慢慢形成自己的 AI 知识体系。
+今後の学習提案：
+学習内容、仕事の経験、考えたことを毎日記録し、自分自身の AI 知識体系を少しずつ築いていきましょう。
 """
 
 
@@ -132,12 +132,12 @@ def generate_by_gemini(prompt: str) -> str:
 
 
 # ==========================
-# 标签解析
+# タグ解析
 # ==========================
 
 def extract_tags(ai_text: str) -> list[str]:
     """
-    从AI返回内容中提取标签
+    AIの応答からタグを抽出する
 
     #AI
     #Python
@@ -146,5 +146,5 @@ def extract_tags(ai_text: str) -> list[str]:
 
     tags = re.findall(r"#([^\s#]+)", ai_text)
 
-    # 去重
+    # 重複を除去
     return list(dict.fromkeys(tags))

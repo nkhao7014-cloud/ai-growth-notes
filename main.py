@@ -79,7 +79,7 @@ def create_note(note: NoteInput):
 
 
 @app.get("/api/notes")
-def list_notes():
+def list_notes(tag: str = ""):
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
 
@@ -96,11 +96,11 @@ def list_notes():
     rows = cur.fetchall()
     conn.close()
 
-    return format_notes(rows)
+    return filter_notes_by_tag(format_notes(rows), tag)
 
 
 @app.get("/api/search")
-def search_notes(q: str = ""):
+def search_notes(q: str = "", tag: str = ""):
     keyword = q.strip()
 
     conn = sqlite3.connect(DB)
@@ -134,7 +134,7 @@ def search_notes(q: str = ""):
     rows = cur.fetchall()
     conn.close()
 
-    return format_notes(rows)
+    return filter_notes_by_tag(format_notes(rows), tag)
 
 
 def format_notes(rows):
@@ -147,6 +147,18 @@ def format_notes(rows):
             "created_at": row[3]
         }
         for row in rows
+    ]
+
+
+def filter_notes_by_tag(notes, tag):
+    selected_tag = tag.strip().lstrip("#")
+
+    if not selected_tag:
+        return notes
+
+    return [
+        note for note in notes
+        if any(note_tag.casefold() == selected_tag.casefold() for note_tag in note["tags"])
     ]
 
 

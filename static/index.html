@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <title>AI Growth Notes</title>
@@ -8,7 +8,7 @@
 
     body {
       margin: 0;
-      font-family: "Microsoft YaHei", Arial, sans-serif;
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
       background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
       color: #0f172a;
     }
@@ -67,6 +67,39 @@
     .search-box input:focus {
       border-color: #2563eb;
       box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+    }
+
+    .filter-bar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: -8px 0 24px;
+      padding: 14px 18px;
+      background: #ffffff;
+      border: 1px solid #dbeafe;
+      border-radius: 16px;
+      color: #475569;
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.06);
+    }
+
+    .filter-bar.active { display: flex; }
+
+    .current-filter {
+      color: #2563eb;
+      font-weight: 800;
+    }
+
+    .clear-filter {
+      width: auto;
+      margin: 0;
+      padding: 9px 14px;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      background: #eff6ff;
+      color: #2563eb;
+      font-size: 14px;
+      font-weight: 700;
     }
 
     .panel {
@@ -177,14 +210,24 @@
 
     .tag {
       display: inline-block;
+      width: auto;
       padding: 6px 12px;
+      margin-top: 0;
       margin-right: 8px;
       margin-bottom: 8px;
+      border: none;
       background: #dbeafe;
       color: #2563eb;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 700;
+    }
+
+    button.tag:hover,
+    button.tag.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.20);
     }
 
     .empty {
@@ -208,7 +251,7 @@
   <div class="container">
     <div class="header">
       <div class="logo">🌱 AI Growth Notes</div>
-      <div class="subtitle">每天记录一点成长，未来收获一本书</div>
+      <div class="subtitle">毎日の小さな成長を記録し、未来の一冊へ</div>
       <div class="date" id="todayDate"></div>
     </div>
 
@@ -216,28 +259,34 @@
       <input
         id="searchInput"
         type="text"
-        placeholder="🔍 搜索成长记录，例如 FastAPI / Prompt / AI"
+        placeholder="🔍 成長記録を検索（例：FastAPI / Prompt / AI）"
         oninput="searchNotes()"
       />
     </div>
 
-    <div class="panel">
-      <div class="input-title">📚 今天学了什么？</div>
-      <textarea
-        id="noteInput"
-        placeholder="例如：今天学习了 FastAPI，理解了 API 和前端页面之间的关系，也意识到一个产品可以先从最小版本开始做。"
-      ></textarea>
-      <button onclick="saveNote()">✨ 保存并 AI 整理</button>
+    <div class="filter-bar" id="filterBar">
+      <div>現在のフィルター：<span class="current-filter" id="currentFilter"></span></div>
+      <button type="button" class="clear-filter" onclick="clearTagFilter()">フィルターを解除</button>
     </div>
 
-    <div class="notes-title">📖 我的成长记录</div>
+    <div class="panel">
+      <div class="input-title">📚 今日は何を学びましたか？</div>
+      <textarea
+        id="noteInput"
+        placeholder="例：今日は FastAPI を学び、API とフロントエンド画面の関係を理解しました。また、プロダクトは最小構成から作り始められると気づきました。"
+      ></textarea>
+      <button onclick="saveNote()">✨ 保存して AI で整理</button>
+    </div>
+
+    <div class="notes-title">📖 私の成長記録</div>
     <div id="notesList"></div>
   </div>
 
   <script>
+    let currentTag = "";
     function setTodayDate() {
       const now = new Date();
-      const weekdays = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+      const weekdays = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
 
       const text =
         "📅 " +
@@ -253,7 +302,7 @@
       const text = document.getElementById("noteInput").value.trim();
 
       if (!text) {
-        alert("请先输入内容");
+        alert("内容を入力してください");
         return;
       }
 
@@ -265,11 +314,17 @@
 
       document.getElementById("noteInput").value = "";
       document.getElementById("searchInput").value = "";
+      currentTag = "";
+      updateFilterDisplay();
       loadNotes();
     }
 
     async function loadNotes() {
-      const res = await fetch("/api/notes");
+      const params = new URLSearchParams();
+      if (currentTag) params.set("tag", currentTag);
+
+      const query = params.toString();
+      const res = await fetch(query ? `/api/notes?${query}` : "/api/notes");
       const notes = await res.json();
 
       renderNotes(notes);
@@ -277,10 +332,13 @@
 
     async function searchNotes() {
       const keyword = document.getElementById("searchInput").value.trim();
+      const params = new URLSearchParams();
+      if (keyword) params.set("q", keyword);
+      if (currentTag) params.set("tag", currentTag);
 
       const url = keyword
-        ? `/api/search?q=${encodeURIComponent(keyword)}`
-        : "/api/notes";
+        ? `/api/search?${params.toString()}`
+        : (params.toString() ? `/api/notes?${params.toString()}` : "/api/notes");
 
       const res = await fetch(url);
       const notes = await res.json();
@@ -288,12 +346,30 @@
       renderNotes(notes);
     }
 
+    function selectTag(tag) {
+      currentTag = tag;
+      updateFilterDisplay();
+      searchNotes();
+    }
+
+    function clearTagFilter() {
+      currentTag = "";
+      updateFilterDisplay();
+      searchNotes();
+    }
+
+    function updateFilterDisplay() {
+      const filterBar = document.getElementById("filterBar");
+      document.getElementById("currentFilter").textContent = currentTag ? `#${currentTag}` : "";
+      filterBar.classList.toggle("active", Boolean(currentTag));
+    }
+
     function renderNotes(notes) {
       const notesList = document.getElementById("notesList");
       notesList.innerHTML = "";
 
       if (notes.length === 0) {
-        notesList.innerHTML = `<div class="empty">没有找到相关成长记录。</div>`;
+        notesList.innerHTML = `<div class="empty">該当する成長記録が見つかりませんでした。</div>`;
         return;
       }
 
@@ -302,19 +378,25 @@
         card.className = "note-card";
 
         const tagsHtml = note.tags && note.tags.length > 0
-          ? note.tags.map(tag => `<span class="tag">#${escapeHtml(tag)}</span>`).join("")
-          : `<span class="tag">#未分类</span>`;
+          ? note.tags.map(tag => `
+              <button
+                type="button"
+                class="tag${tag.toLocaleLowerCase() === currentTag.toLocaleLowerCase() ? " active" : ""}"
+                data-tag="${escapeHtml(tag)}"
+              >#${escapeHtml(tag)}</button>
+            `).join("")
+          : `<span class="tag">#未分類</span>`;
 
         card.innerHTML = `
           <div class="note-date">📅 ${note.created_at}</div>
 
-          <div class="section-label">📝 原始笔记</div>
+          <div class="section-label">📝 元のノート</div>
           <div class="raw">${escapeHtml(note.raw_text)}</div>
 
-          <div class="section-label">🏷 标签</div>
+          <div class="section-label">🏷 タグ</div>
           <div class="tags">${tagsHtml}</div>
 
-          <div class="section-label">🤖 AI 自动整理</div>
+          <div class="section-label">🤖 AI による自動整理</div>
           <div class="ai">${escapeHtml(note.ai_summary)}</div>
         `;
 
@@ -326,10 +408,18 @@
       return String(text || "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
     }
 
+    document.getElementById("notesList").addEventListener("click", event => {
+      const tagButton = event.target.closest("button.tag[data-tag]");
+      if (tagButton) selectTag(tagButton.dataset.tag);
+    });
+
     setTodayDate();
+    updateFilterDisplay();
     loadNotes();
   </script>
 </body>
