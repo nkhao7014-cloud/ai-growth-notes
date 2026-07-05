@@ -53,6 +53,18 @@ class TagFilterTests(unittest.TestCase):
     def test_empty_tag_preserves_existing_list_behavior(self):
         self.assertEqual(len(main.list_notes(tag="")), 3)
 
+    @patch("main.datetime")
+    def test_stats_returns_note_and_tag_counts(self, mock_datetime):
+        mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 0)
+
+        stats = main.get_stats()
+
+        self.assertEqual(stats["total_notes"], 3)
+        self.assertEqual(stats["today_notes"], 3)
+        self.assertEqual(stats["tag_count"], 4)
+        self.assertEqual(stats["top_tags"][0], {"tag": "AI", "count": 2})
+        self.assertEqual(len(stats["top_tags"]), 4)
+
 
 if __name__ == "__main__":
     unittest.main()

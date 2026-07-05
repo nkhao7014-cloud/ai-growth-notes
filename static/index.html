@@ -52,6 +52,62 @@
       margin-bottom: 24px;
     }
 
+    .dashboard {
+      margin-bottom: 30px;
+    }
+
+    .dashboard-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #1e40af;
+      margin-bottom: 14px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      padding: 18px;
+      text-align: center;
+      background: #f8fafc;
+      border: 1px solid #dbeafe;
+      border-radius: 18px;
+    }
+
+    .stat-value {
+      color: #2563eb;
+      font-size: 30px;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      margin-top: 5px;
+      color: #64748b;
+      font-size: 14px;
+    }
+
+    .top-tags-label {
+      margin-bottom: 10px;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .top-tags-empty {
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .top-tag-count {
+      margin-left: 5px;
+      opacity: 0.75;
+    }
+
     .search-box input {
       width: 100%;
       padding: 16px 18px;
@@ -243,6 +299,7 @@
       .logo { font-size: 34px; }
       .container { padding-top: 32px; }
       .panel { padding: 20px; }
+      .stats-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -253,6 +310,26 @@
       <div class="logo">🌱 AI Growth Notes</div>
       <div class="subtitle">毎日の小さな成長を記録し、未来の一冊へ</div>
       <div class="date" id="todayDate"></div>
+    </div>
+
+    <div class="panel dashboard">
+      <div class="dashboard-title">成長ダッシュボード</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-value" id="totalNotes">-</div>
+          <div class="stat-label">総ノート数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="todayNotes">-</div>
+          <div class="stat-label">本日のノート数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="tagCount">-</div>
+          <div class="stat-label">タグ数</div>
+        </div>
+      </div>
+      <div class="top-tags-label">よく使われているタグ Top 5</div>
+      <div id="topTags"><span class="top-tags-empty">集計中...</span></div>
     </div>
 
     <div class="search-box">
@@ -316,7 +393,29 @@
       document.getElementById("searchInput").value = "";
       currentTag = "";
       updateFilterDisplay();
-      loadNotes();
+      await Promise.all([loadNotes(), loadStats()]);
+    }
+
+    async function loadStats() {
+      const res = await fetch("/api/stats");
+      if (!res.ok) return;
+
+      const stats = await res.json();
+      document.getElementById("totalNotes").textContent = stats.total_notes;
+      document.getElementById("todayNotes").textContent = stats.today_notes;
+      document.getElementById("tagCount").textContent = stats.tag_count;
+
+      const topTags = document.getElementById("topTags");
+      if (stats.top_tags.length === 0) {
+        topTags.innerHTML = '<span class="top-tags-empty">タグはまだありません</span>';
+        return;
+      }
+
+      topTags.innerHTML = stats.top_tags.map(item => `
+        <button type="button" class="tag" data-tag="${escapeHtml(item.tag)}">
+          #${escapeHtml(item.tag)}<span class="top-tag-count">${item.count}</span>
+        </button>
+      `).join("");
     }
 
     async function loadNotes() {
@@ -418,9 +517,14 @@
       if (tagButton) selectTag(tagButton.dataset.tag);
     });
 
+    document.getElementById("topTags").addEventListener("click", event => {
+      const tagButton = event.target.closest("button.tag[data-tag]");
+      if (tagButton) selectTag(tagButton.dataset.tag);
+    });
+
     setTodayDate();
     updateFilterDisplay();
-    loadNotes();
+    Promise.all([loadNotes(), loadStats()]);
   </script>
 </body>
 </html>

@@ -1,4 +1,5 @@
 import sqlite3
+from collections import Counter
 from datetime import datetime
 
 from fastapi import FastAPI
@@ -97,6 +98,46 @@ def list_notes(tag: str = ""):
     conn.close()
 
     return filter_notes_by_tag(format_notes(rows), tag)
+
+
+@app.get("/api/stats")
+def get_stats():
+    conn = sqlite3.connect(DB)
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM notes")
+    total_notes = cur.fetchone()[0]
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    cur.execute(
+        "SELECT COUNT(*) FROM notes WHERE substr(created_at, 1, 10) = ?",
+        (today,),
+    )
+    today_notes = cur.fetchone()[0]
+
+    cur.execute("SELECT ai_summary FROM notes")
+    summaries = cur.fetchall()
+    conn.close()
+
+    tag_counts = Counter(
+        tag
+        for (summary,) in summaries
+        for tag in extract_tags(summary or "")
+    )
+    top_tags = sorted(
+        tag_counts.items(),
+        key=lambda item: (-item[1], item[0].casefold()),
+    )[:5]
+
+    return {
+        "total_notes": total_notes,
+        "today_notes": today_notes,
+        "tag_count": len(tag_counts),
+        "top_tags": [
+            {"tag": tag, "count": count}
+            for tag, count in top_tags
+        ],
+    }
 
 
 @app.get("/api/search")
