@@ -9,9 +9,7 @@ from ai_client import AI_MODEL, extract_tags
 
 def build_weekly_report(notes: list[dict]) -> dict:
     tag_counts = Counter(
-        tag
-        for note in notes
-        for tag in extract_tags(note.get("ai_summary") or "")
+        tag for note in notes for tag in extract_tags(note.get("ai_summary") or "")
     )
     frequent_tags = [
         {"tag": tag, "count": count}
@@ -19,13 +17,12 @@ def build_weekly_report(notes: list[dict]) -> dict:
             tag_counts.items(), key=lambda item: (-item[1], item[0].casefold())
         )[:5]
     ]
-
     if not notes:
         return {
             "learned_contents": [],
             "frequent_tags": [],
-            "ai_summary": "今週の学習記録はまだありません。",
-            "next_week_suggestions": ["学んだことを1日1件記録してみましょう。"],
+            "ai_summary": "今週の学習記録はまだありません。小さな気づきから記録してみましょう。",
+            "next_week_suggestions": ["学んだことを1日1件記録してみる"],
             "provider": "mock",
         }
 
@@ -52,7 +49,6 @@ def _build_prompt(notes: list[dict], frequent_tags: list[dict]) -> str:
     )
     tags = ", ".join(f"#{item['tag']}({item['count']})" for item in frequent_tags) or "なし"
     return f"""以下は直近1週間の学習記録です。日本語で週次レポートを作成してください。
-
 学習記録:
 {note_text}
 
@@ -73,8 +69,7 @@ def _generate_by_gemini(prompt: str) -> dict:
     text = (response.text or "").strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1].rsplit("```", 1)[0]
-    result = json.loads(text)
-    return _validate_result(result)
+    return _validate_result(json.loads(text))
 
 
 def _validate_result(result: dict) -> dict:
@@ -100,7 +95,7 @@ def _generate_by_mock(notes: list[dict]) -> dict:
         "learned_contents": learned,
         "ai_summary": f"今週は{len(notes)}件の学習記録を残しました。記録を振り返り、理解した内容を次の実践につなげていきましょう。",
         "next_week_suggestions": [
-            "頻出テーマを1つ選び、小さな成果物を作って理解を確認する。",
-            "学習後に要点と疑問点を記録し、週末に振り返る。",
+            "頻出テーマを1つ選び、小さな成果物を作って理解を確認する",
+            "学習後に要点と疑問点を記録し、週末に振り返る",
         ],
     }

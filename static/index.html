@@ -1,811 +1,218 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>AI Growth Notes</title>
   <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", Arial, sans-serif;
-      background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
-      color: #0f172a;
+    :root{--blue:#2563eb;--indigo:#4f46e5;--ink:#172033;--muted:#718096;--line:#e6ebf3;--bg:#f6f8fc;--card:#fff;--shadow:0 10px 30px rgba(37,55,92,.07)}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,"Yu Gothic","Hiragino Kaku Gothic ProN",sans-serif;color:var(--ink);background:var(--bg)}button,input,textarea{font:inherit}
+    .shell{max-width:1680px;margin:auto;padding:24px 32px 56px}.topbar{display:flex;justify-content:space-between;align-items:center;gap:28px;padding:28px 34px;color:#fff;border-radius:24px;background:linear-gradient(120deg,#1767db,#5b4be7);box-shadow:0 18px 45px rgba(49,92,204,.19)}.brand{flex:1}.brand h1{margin:0 0 7px;font-size:29px}.brand p{margin:0;color:#e8efff}.head-tools{display:flex;align-items:center;gap:12px}.date{padding:9px 14px;border-radius:12px;background:#ffffff18;white-space:nowrap}.weather{font-size:22px}.header-search{width:min(330px,28vw);padding:11px 15px 11px 40px;border:1px solid #ffffff42;border-radius:13px;color:#172033;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Ccircle cx='8' cy='8' r='5'/%3E%3Cpath d='m12 12 4 4'/%3E%3C/svg%3E") no-repeat 14px center;outline:0}
+    .tabs{display:flex;gap:5px;margin:18px 0 24px;padding:6px;overflow:auto;border:1px solid var(--line);border-radius:16px;background:#fff}.tab{min-width:max-content;padding:11px 18px;border:0;border-radius:11px;background:transparent;color:#667085;font-weight:700;cursor:pointer}.tab.active{color:#fff;background:linear-gradient(135deg,var(--blue),#7655e8);box-shadow:0 7px 18px #3c5bea35}
+    .view[hidden]{display:none}.stack{display:grid;gap:20px;align-content:start}.card{padding:22px;border:1px solid var(--line);border-radius:20px;background:var(--card);box-shadow:var(--shadow)}.card h2,.card h3{margin:0}.section-head{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}.section-head h2{font-size:20px}.eyebrow{margin-bottom:6px;color:var(--blue);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase}.note-date{color:var(--muted);font-size:12px}
+    .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:20px}.stat{position:relative;overflow:hidden;padding:20px;border:1px solid #e8edfa;border-radius:18px;background:linear-gradient(145deg,#fff,#f2f6ff)}.stat:nth-child(2){background:linear-gradient(145deg,#fff,#edf9f6)}.stat:nth-child(3){background:linear-gradient(145deg,#fff,#f7f0ff)}.stat:nth-child(4){background:linear-gradient(145deg,#fff,#fff7e8)}.stat b{display:block;font-size:30px;color:#3156cc}.stat span{color:var(--muted);font-size:13px}.dashboard-layout{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,.7fr);gap:22px;align-items:start}.analytics-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.wide{grid-column:1/-1}.highlight{min-height:190px;background:linear-gradient(145deg,#edf5ff,#f8f4ff)}.highlight blockquote{margin:18px 0 0;padding-left:16px;border-left:3px solid #6c59df;line-height:1.8}.bar-row{display:grid;grid-template-columns:minmax(72px,110px) 1fr 28px;gap:9px;align-items:center;margin:12px 0;font-size:13px}.bar{height:8px;border-radius:99px;background:#edf0f6;overflow:hidden}.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#4380ec,#7758e8)}
+    .trend-chart{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;height:150px;padding-top:12px}.trend-day{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:7px;min-width:0}.trend-bar{width:min(30px,75%);min-height:5px;border-radius:8px 8px 4px 4px;background:linear-gradient(180deg,#6f67eb,#2f75e8)}.trend-day b{font-size:11px}.trend-day span{color:var(--muted);font-size:10px}
+    .mini-report{border:0;background:linear-gradient(145deg,#192b64,#563fd0);color:#fff}.mini-report p{color:#dce4ff;line-height:1.65}.primary{width:auto;padding:12px 20px;border:0;border-radius:12px;color:#fff;background:linear-gradient(135deg,var(--blue),var(--indigo));font-weight:800;cursor:pointer}.mini-report .primary{background:#fff;color:#384ac0}.recent-item{padding:12px 0;border-bottom:1px solid var(--line)}.recent-item:last-child{border:0}.recent-item b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px}.recent-item span{font-size:12px;color:var(--muted)}
+    .calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.calendar-month{color:var(--muted);font-size:12px}.week,.calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));text-align:center}.week{margin-bottom:6px;color:#98a2b3;font-size:11px}.calendar-grid{gap:3px}.day{position:relative;display:grid;place-items:center;min-width:0;aspect-ratio:1;padding:0;border:0;border-radius:50%;color:var(--ink);background:transparent;font-size:12px;cursor:pointer}.day:hover,.day.selected{background:#edf3ff;color:#2456c7}.day.outside{color:#c2c8d2}.day.today{color:#fff;background:linear-gradient(135deg,#2e6be5,#6950dc);font-weight:800;box-shadow:0 4px 10px #3e67d742}.day.has-note::after{content:"";position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#3777ec}.day.today.has-note::after{background:#fff}.day .favorite-mark{position:absolute;right:0;top:-2px;color:#f6b81b;font-size:9px;text-shadow:0 1px 2px #fff}.selected-note{padding:11px 0;border-bottom:1px solid var(--line)}.selected-note:last-child{border-bottom:0}.selected-note b{display:block;font-size:13px;line-height:1.5}.selected-note span{color:var(--muted);font-size:11px}.learning-time{display:flex;align-items:flex-end;justify-content:space-between;min-height:105px}.learning-time strong{font-size:38px;color:#365dd4}.learning-time svg{width:48%;height:72px}
+    .editor textarea{width:100%;min-height:130px;padding:16px;border:1px solid #d9e1ef;border-radius:14px;resize:vertical;outline:0;background:#fafcff;line-height:1.7}.editor textarea:focus,.search:focus{border-color:var(--blue);box-shadow:0 0 0 3px #2563eb17}.editor .primary{margin-top:12px}.search{width:100%;padding:12px 15px;border:1px solid var(--line);border-radius:12px;outline:0}.filter{display:none;justify-content:space-between;align-items:center;margin-top:10px;padding:10px 12px;border:1px solid #dbe7ff;border-radius:10px;background:#eff6ff;color:var(--blue)}.filter.active{display:flex}.link-btn,.action{width:auto;margin:0;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:#526174;cursor:pointer}.action.danger{color:#dc2626}.action.favorite.active{color:#f59e0b;background:#fffbeb}.notes{display:grid;gap:14px}.note{padding:18px;border:1px solid var(--line);border-radius:16px;background:#fff}.note-head,.actions{display:flex;justify-content:space-between;align-items:center;gap:8px}.raw{margin:14px 0 10px;white-space:pre-wrap;line-height:1.65}.ai{padding:12px 14px;border-left:3px solid var(--blue);border-radius:10px;background:#f2f6ff;color:#42516c;white-space:pre-wrap;line-height:1.6}.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.tag,.tag-badge{display:inline-flex;align-items:center;width:auto;min-height:26px;margin:0;padding:5px 10px;border:1px solid #d9e5ff;border-radius:999px;color:#2855bd;background:#edf3ff;font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap}.tag{cursor:pointer}.tag:hover{border-color:#9ebaff;background:#e2ebff}.tag.active{border-color:var(--blue);color:#fff;background:var(--blue)}
+    .timeline-group{margin-bottom:14px;border:1px solid var(--line);border-radius:15px;overflow:hidden}.timeline-title{width:100%;margin:0;padding:14px 16px;border:0;background:#f3f7ff;text-align:left;color:#29479c;font-weight:800;cursor:pointer}.timeline-items{padding:4px 16px}.timeline-group.closed .timeline-items{display:none}.timeline-item{padding:14px 4px;border-bottom:1px solid var(--line)}.report-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.report-section{margin-top:18px;padding-top:18px;border-top:1px solid var(--line)}.report-section p,.report-section li,.analysis-card p,.analysis-card li{line-height:1.75}.monthly-analysis{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}.analysis-card{padding:20px;border:1px solid var(--line);border-radius:16px;background:#fafcff}.analysis-card.wide{background:linear-gradient(145deg,#edf4ff,#f8f4ff)}.analysis-card .report-grid{grid-template-columns:repeat(2,1fr)}.empty{padding:24px;text-align:center;color:var(--muted);border:1px dashed #cdd5e3;border-radius:14px}.edit-area{width:100%;min-height:110px;margin:12px 0;padding:12px;border:1px solid var(--line);border-radius:10px}.edit-actions{display:flex;gap:8px}.loading{color:#8a94a5}
+    @media(max-width:1100px){.dashboard-layout{grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr)}.analytics-grid{grid-template-columns:1fr}.wide{grid-column:auto}}
+    @media(max-width:820px){.shell{padding:16px}.dashboard-layout{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}.dashboard-side{grid-template-columns:1fr 1fr}.dashboard-side .calendar-card{grid-column:1/-1}.analytics-grid{grid-template-columns:1fr 1fr}.wide{grid-column:1/-1}}
+    @media(max-width:620px){.shell{padding:12px}.topbar{padding:22px;align-items:flex-start;flex-direction:column}.brand h1{font-size:22px}.brand p{font-size:13px}.head-tools{width:100%;flex-wrap:wrap}.date{display:none}.header-search{width:100%}.stats,.analytics-grid,.dashboard-side,.report-grid,.monthly-analysis{grid-template-columns:1fr}.wide,.dashboard-side .calendar-card{grid-column:auto}.card{padding:18px}.note-head{align-items:flex-start;flex-direction:column}}
+</style>
+  <style>
+    :root{--blue:#1557e8;--ink:#102456;--muted:#63759d;--line:#e3eaf7;--bg:#f8faff;--shadow:0 5px 18px rgba(29,67,145,.07);--layout-gap:16px;--page-padding:26px}
+    html,body{max-width:100%;overflow-x:hidden}body{background:linear-gradient(135deg,#fff 0%,#f8faff 58%,#f5f8ff 100%);font-size:13px}
+    img,svg{max-width:100%}.shell{width:100%;max-width:1920px;margin:0 auto;padding:18px var(--page-padding) 28px}.view,.dashboard-layout,.dashboard-layout>*,.analytics-grid>*,.dashboard-side>*,.topbar>*,.head-tools{min-width:0}
+    .topbar{padding:0 2px 18px;color:var(--ink);border-radius:0;background:none;box-shadow:none}
+    .brand{display:flex;align-items:center;gap:12px}.brand-mark{font-size:34px;line-height:1}.brand h1{margin:0 0 3px;color:#073bc9;font-size:23px}.brand p{margin:0;color:#344b7d;font-size:12px}
+    .head-tools{gap:14px}.top-date{font-size:15px;font-weight:800;white-space:nowrap}.weather{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.weather-icon{font-size:26px}.growth-pill{padding:6px 13px;border-radius:20px;color:#ed9d00;background:#fff3d7;font-weight:800}
+    .header-search{width:240px;padding:9px 38px 9px 36px;border:1px solid #dfe7f6;border-radius:20px;background-color:#fff;box-shadow:0 3px 12px rgba(34,72,140,.04)}.search-wrap{position:relative}.shortcut{position:absolute;right:10px;top:7px;padding:2px 7px;border-radius:7px;color:#8290aa;background:#f2f5fa;font-size:11px}.icon-button,.avatar{display:grid;place-items:center;width:38px;height:38px;border:1px solid #e1e8f5;border-radius:50%;background:#fff;color:#244d9e}.avatar{border:0;color:#fff;background:#2862eb;font-size:14px}
+    .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:0;margin:0 0 18px;padding:0;border:1px solid var(--line);border-radius:11px;overflow:hidden;box-shadow:var(--shadow)}.tab{padding:12px;border-right:1px solid var(--line);border-radius:10px;color:#173268;background:#fff}.tab:last-child{border-right:0}.tab.active{background:linear-gradient(135deg,#1259ea,#3d43dc);box-shadow:none}
+    .tab-icon{margin-right:10px;font-size:16px}.card{padding:17px;border-radius:12px}.card h2,.card h3{color:#15346f;font-weight:800;letter-spacing:-.01em}.stats{gap:0;margin-bottom:13px}.stat{display:grid;grid-template-columns:58px 1fr;padding:20px;border-radius:0;background:#fff!important}.stat:first-child{border-radius:12px 0 0 12px}.stat:last-child{border-radius:0 12px 12px 0}.stat-icon{grid-row:1/4;display:grid;place-items:center;width:58px;height:58px;border-radius:12px;font-size:28px;background:#eaf1ff}.stat:nth-child(2) .stat-icon{background:#e8f8ef}.stat:nth-child(3) .stat-icon{background:#f0eaff}.stat:nth-child(4) .stat-icon{background:#fff5e2}.stat-label{color:#52678f!important;font-size:11px!important;font-weight:700}.stat b{font-size:29px;line-height:1.35;letter-spacing:-.03em}.stat-delta{color:#61759d!important;font-size:10px!important}.stat-delta em{color:#08a653;font-style:normal}
+    .dashboard-layout{grid-template-columns:minmax(0,71fr) minmax(0,29fr);gap:var(--layout-gap)}.stack,.analytics-grid,.dashboard-side{gap:var(--layout-gap)}.dashboard-side .card{box-shadow:var(--shadow)}
+    .highlight{min-height:0;padding:18px 22px;background:#fff}.highlight-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:15px}.highlight-tile{display:flex;align-items:center;gap:14px;padding:14px;border-radius:11px;background:#f8faff}.highlight-icon{display:grid;place-items:center;flex:0 0 42px;height:42px;border-radius:50%;background:#dfeaff;font-size:21px}.highlight-tile:nth-child(2) .highlight-icon{background:#fff0df}.highlight-tile:nth-child(3) .highlight-icon{background:#dcf6e8}.highlight-tile:nth-child(4) .highlight-icon{background:#eee7ff}.highlight-tile small{display:block;color:#52678f;font-size:11px;font-weight:700}.highlight-tile strong{display:block;margin:5px 0 2px;color:#174fe0;font-size:17px}.highlight-tile:nth-child(3) strong{color:#0eae58}.highlight-tile p{margin:0;color:#60739a;font-size:10px}
+    .chart-card{min-height:350px}.section-head{margin-bottom:10px}.section-head h2,.card h2{font-size:15px}.section-link{border:0;color:#0e52db;background:none;font-size:11px;font-weight:800;cursor:pointer}.chart-select{max-width:100%;padding:6px 10px;border:1px solid var(--line);border-radius:8px;color:#334d7d;background:#fff;font-size:11px}.trend-chart-wrapper{position:relative;width:100%;height:280px;min-height:280px;padding-top:10px;min-width:0}.trend-chart-wrapper canvas{display:block;width:100%!important;height:100%!important}.donut-layout{display:grid;grid-template-columns:minmax(0,48%) minmax(0,52%);align-items:center;min-height:285px}.donut{display:grid;place-items:center;width:128px;height:128px;margin:auto;border-radius:50%;background:conic-gradient(#3b68ea 0 28%,#4cc585 28% 46%,#ffad09 46% 62%,#a64de8 62% 76%,#e55d78 76% 88%,#b8c2d5 88%)}.donut:after{content:"";width:72px;height:72px;border-radius:50%;background:#fff}.tag-legend{display:grid;gap:8px;min-width:0}.legend-row{display:grid;grid-template-columns:10px minmax(0,1fr) auto;gap:8px;align-items:center;min-width:0;color:#283f72;font-size:11px}.legend-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.legend-dot{width:8px;height:8px;border-radius:2px}.legend-row b{font-size:11px;white-space:nowrap}
+    .topic-card,.time-card{min-height:210px}.topic-list{margin-top:18px}.bar-row{grid-template-columns:125px 1fr 25px;margin:15px 0}.bar{height:7px}.time-bars{display:flex;align-items:end;justify-content:space-around;height:145px;padding-top:22px;border-bottom:1px solid #dfe6f2}.time-column{display:flex;flex-direction:column;justify-content:end;align-items:center;gap:7px;height:100%;color:#526994;font-size:10px}.time-column i{display:block;width:21px;border-radius:3px 3px 0 0;background:linear-gradient(#5b83f4,#3263e8)}
+    .mini-report{color:var(--ink);background:#fff}.mini-report p{color:#243965;line-height:1.7}.mini-report .primary{float:right;padding:0;color:#0d51dc;background:none;font-size:11px}.recent-item{display:grid;grid-template-columns:30px 1fr auto auto;gap:10px;align-items:center;padding:10px 0}.recent-doc{display:grid;place-items:center;width:30px;height:30px;border-radius:8px;color:#2d61db;background:#edf3ff}.recent-item b{font-size:11px}.recent-item span{font-size:10px}.recent-star{color:#f4ae00;font-size:15px}
+    .calendar-combined{display:grid;grid-template-columns:1fr 1.05fr;gap:12px}.calendar-pane{padding-right:8px}.selected-pane{padding:13px;border-radius:10px;background:#f7f9fe}.calendar-head{margin-bottom:9px}.calendar-grid{gap:1px}.day{font-size:10px}.week{font-size:9px}.selected-note{padding:9px 0}.selected-note b{font-size:10px}.selected-note span{font-size:9px}.calendar-legend{margin-top:8px;color:#7181a3;font-size:8px}
+    .dashboard-extras{margin-top:16px}.dashboard-extras summary{cursor:pointer;color:#3159ad;font-weight:700}.dashboard-extras .card{margin-top:12px}
+    @media(max-width:1200px){:root{--page-padding:20px}.dashboard-layout{grid-template-columns:minmax(0,68fr) minmax(280px,32fr)}.analytics-grid{grid-template-columns:1fr}.wide{grid-column:auto}.highlight-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.head-tools{gap:8px}.header-search{width:min(220px,20vw)}.calendar-combined{grid-template-columns:1fr}.calendar-pane{padding-right:0}}
+    @media(max-width:900px){:root{--page-padding:16px}.dashboard-layout{grid-template-columns:1fr}.dashboard-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-side .calendar-card{grid-column:1/-1}.analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wide{grid-column:1/-1}.topbar{flex-wrap:wrap}.topbar .brand{flex-basis:50%}.header-search{width:220px}.calendar-combined{grid-template-columns:1fr 1.05fr}}
+    @media(max-width:768px){:root{--layout-gap:12px;--page-padding:12px}.topbar,.head-tools{align-items:flex-start;flex-direction:column}.topbar{gap:12px}.head-tools{width:100%}.header-search,.search-wrap{width:100%}.tabs{display:flex}.tab-icon{display:none}.stats{grid-template-columns:1fr 1fr;gap:var(--layout-gap)}.stat,.stat:first-child,.stat:last-child{border-radius:12px}.highlight-grid,.analytics-grid,.dashboard-side,.calendar-combined{grid-template-columns:1fr}.highlight-tile{min-width:0}.wide,.dashboard-side .calendar-card{grid-column:auto}.chart-card{min-height:330px}}
+  </style>
+  <style>
+    :root{
+      --font-xs:14px;
+      --font-sm:15px;
+      --font-md:16px;
+      --font-lg:18px;
+      --font-xl:22px;
+      --font-2xl:24px;
+      --font-3xl:36px;
+      --font-kpi:46px;
+      --text-line-height:1.6;
+      --title-line-height:1.3;
+      --card-padding:26px;
+      --layout-gap:24px;
     }
-
-    .container {
-      max-width: 920px;
-      margin: 0 auto;
-      padding: 48px 20px 80px;
-    }
-
-    .header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .logo {
-      font-size: 44px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      color: #2563eb;
-      margin-bottom: 10px;
-    }
-
-    .subtitle {
-      font-size: 18px;
-      color: #64748b;
-      margin-bottom: 12px;
-    }
-
-    .date {
-      display: inline-block;
-      padding: 8px 14px;
-      border-radius: 999px;
-      background: #ffffff;
-      color: #475569;
-      font-size: 14px;
-      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-    }
-
-    .search-box {
-      margin-bottom: 24px;
-    }
-
-    .view-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 24px;
-      padding: 6px;
-      background: rgba(255,255,255,0.9);
-      border: 1px solid #dbeafe;
-      border-radius: 18px;
-      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.06);
-    }
-
-    .view-tab { margin: 0; padding: 12px 18px; background: transparent; color: #64748b; box-shadow: none; }
-    .view-tab.active { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #ffffff; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.20); }
-    .export-button { width: auto; margin: 0 0 24px; padding: 12px 18px; }
-    .view[hidden] { display: none; }
-
-    .dashboard {
-      margin-bottom: 30px;
-    }
-
-    .dashboard-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #1e40af;
-      margin-bottom: 14px;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px;
-      margin-bottom: 16px;
-    }
-
-    .stat-card {
-      padding: 18px;
-      text-align: center;
-      background: #f8fafc;
-      border: 1px solid #dbeafe;
-      border-radius: 18px;
-    }
-
-    .stat-value {
-      color: #2563eb;
-      font-size: 30px;
-      font-weight: 800;
-      line-height: 1.2;
-    }
-
-    .stat-label {
-      margin-top: 5px;
-      color: #64748b;
-      font-size: 14px;
-    }
-
-    .top-tags-label {
-      margin-bottom: 10px;
-      color: #475569;
-      font-size: 14px;
-      font-weight: 800;
-    }
-
-    .top-tags-empty {
-      color: #94a3b8;
-      font-size: 14px;
-    }
-
-    .top-tag-count {
-      margin-left: 5px;
-      opacity: 0.75;
-    }
-
-    .search-box input {
-      width: 100%;
-      padding: 16px 18px;
-      border: 1px solid #dbeafe;
-      border-radius: 16px;
-      font-size: 16px;
-      outline: none;
-      background: #ffffff;
-      color: #0f172a;
-      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.06);
-    }
-
-    .search-box input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
-    }
-
-    .filter-bar {
-      display: none;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      margin: -8px 0 24px;
-      padding: 14px 18px;
-      background: #ffffff;
-      border: 1px solid #dbeafe;
-      border-radius: 16px;
-      color: #475569;
-      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.06);
-    }
-
-    .filter-bar.active { display: flex; }
-
-    .current-filter {
-      color: #2563eb;
-      font-weight: 800;
-    }
-
-    .clear-filter {
-      width: auto;
-      margin: 0;
-      padding: 9px 14px;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      background: #eff6ff;
-      color: #2563eb;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .panel {
-      background: rgba(255,255,255,0.9);
-      border: 1px solid #e2e8f0;
-      border-radius: 24px;
-      padding: 26px;
-      box-shadow: 0 20px 50px rgba(37, 99, 235, 0.10);
-      margin-bottom: 30px;
-    }
-
-    .input-title,
-    .notes-title {
-      font-size: 20px;
-      font-weight: 800;
-      color: #1e40af;
-      margin-bottom: 14px;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 170px;
-      border: 1px solid #dbeafe;
-      border-radius: 18px;
-      padding: 18px;
-      outline: none;
-      resize: vertical;
-      font-size: 16px;
-      line-height: 1.8;
-      color: #0f172a;
-      background: #f8fafc;
-    }
-
-    textarea:focus {
-      border-color: #2563eb;
-      background: #ffffff;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
-    }
-
-    textarea::placeholder {
-      color: #94a3b8;
-    }
-
-    button {
-      width: 100%;
-      margin-top: 18px;
-      padding: 16px;
-      border: none;
-      border-radius: 16px;
-      background: linear-gradient(135deg, #2563eb, #4f46e5);
-      color: white;
-      font-size: 17px;
-      font-weight: 800;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-
-    button:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 12px 28px rgba(37, 99, 235, 0.25);
-    }
-
-    .note-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 22px;
-      padding: 24px;
-      box-shadow: 0 14px 36px rgba(15, 23, 42, 0.06);
-      margin-bottom: 20px;
-      line-height: 1.8;
-    }
-
-    .note-date {
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 14px;
-    }
-
-    .section-label {
-      font-weight: 800;
-      color: #1e40af;
-      margin-top: 14px;
-      margin-bottom: 8px;
-    }
-
-    .raw,
-    .ai {
-      white-space: pre-wrap;
-      padding: 16px;
-      border-radius: 16px;
-      font-size: 15px;
-    }
-
-    .raw {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-    }
-
-    .ai {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-left: 5px solid #2563eb;
-    }
-
-    .tags {
-      margin: 10px 0 16px;
-    }
-
-    .tag {
-      display: inline-block;
-      width: auto;
-      padding: 6px 12px;
-      margin-top: 0;
-      margin-right: 8px;
-      margin-bottom: 8px;
-      border: none;
-      background: #dbeafe;
-      color: #2563eb;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .note-header, .note-actions {
-      display: flex;
-      align-items: center;
-    }
-
-    .note-header { justify-content: space-between; gap: 12px; }
-    .note-actions { gap: 8px; }
-
-    .note-action {
-      width: auto;
-      margin: 0;
-      padding: 8px 12px;
-      border: 1px solid #dbeafe;
-      border-radius: 12px;
-      background: #f8fafc;
-      color: #475569;
-      font-size: 14px;
-      font-weight: 700;
-    }
-
-    .favorite-button { font-size: 20px; padding: 5px 10px; color: #94a3b8; }
-    .favorite-button.active { color: #f59e0b; background: #fffbeb; border-color: #fde68a; }
-    .delete-button { color: #dc2626; background: #fff7f7; border-color: #fecaca; }
-    .edit-area { min-height: 130px; margin-top: 12px; }
-    .edit-actions { display: flex; gap: 10px; }
-    .edit-actions button { margin-top: 10px; }
-    .cancel-button { background: #64748b; }
-
-    button.tag:hover,
-    button.tag.active {
-      background: #2563eb;
-      color: #ffffff;
-      box-shadow: 0 8px 18px rgba(37, 99, 235, 0.20);
-    }
-
-    .empty {
-      padding: 32px;
-      text-align: center;
-      color: #64748b;
-      background: #ffffff;
-      border-radius: 20px;
-      border: 1px dashed #cbd5e1;
-    }
-
-    .timeline-heading { font-size: 24px; font-weight: 800; color: #1e40af; margin-bottom: 8px; }
-    .timeline-description { color: #64748b; margin-bottom: 22px; }
-    .timeline-group { margin-bottom: 16px; overflow: hidden; background: #ffffff; border: 1px solid #dbeafe; border-radius: 18px; }
-    .timeline-date { display: flex; align-items: center; justify-content: space-between; width: 100%; margin: 0; padding: 17px 20px; border-radius: 0; background: #eff6ff; color: #1e40af; box-shadow: none; text-align: left; }
-    .timeline-date:hover { transform: none; box-shadow: none; background: #dbeafe; }
-    .timeline-count { color: #64748b; font-size: 13px; }
-    .timeline-chevron { display: inline-block; transition: transform 0.2s; }
-    .timeline-group.collapsed .timeline-chevron { transform: rotate(-90deg); }
-    .timeline-group.collapsed .timeline-items { display: none; }
-    .timeline-items { padding: 4px 20px; }
-    .timeline-item { position: relative; padding: 18px 0 18px 22px; border-bottom: 1px solid #e2e8f0; }
-    .timeline-item:last-child { border-bottom: none; }
-    .timeline-item::before { content: ""; position: absolute; left: 0; top: 26px; width: 9px; height: 9px; border-radius: 50%; background: #2563eb; box-shadow: 0 0 0 4px #dbeafe; }
-    .timeline-time { color: #64748b; font-size: 13px; margin-bottom: 5px; }
-    .timeline-note-text { line-height: 1.7; white-space: pre-wrap; }
-
-    .weekly-report-button { margin: 0 0 20px; }
-    .weekly-report-card { display: none; margin-bottom: 30px; }
-    .weekly-report-card.active { display: block; }
-    .weekly-report-header { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; margin-bottom: 18px; }
-    .weekly-report-title { color: #1e40af; font-size: 22px; font-weight: 800; }
-    .weekly-report-period { color: #64748b; font-size: 13px; }
-    .weekly-report-section { padding: 16px 0; border-top: 1px solid #e2e8f0; }
-    .weekly-report-section h3 { margin: 0 0 10px; color: #334155; font-size: 16px; }
-    .weekly-report-section ul { margin: 0; padding-left: 22px; line-height: 1.8; }
-    .weekly-report-summary { margin: 0; line-height: 1.8; white-space: pre-wrap; }
-    .weekly-report-meta { margin-top: 14px; color: #94a3b8; font-size: 12px; }
-
-    @media (max-width: 600px) {
-      .logo { font-size: 34px; }
-      .container { padding-top: 32px; }
-      .panel { padding: 20px; }
-      .stats-grid { grid-template-columns: 1fr; }
+    body{font-size:var(--font-md);line-height:var(--text-line-height)}
+    h1,h2,h3,strong,b{line-height:var(--title-line-height)}
+    .brand h1{margin-bottom:4px;font-size:var(--font-3xl);font-weight:700;line-height:var(--title-line-height);letter-spacing:-.03em}
+    .brand p{font-size:var(--font-lg);line-height:1.5}
+    .top-date,.weather,.growth-pill{font-size:var(--font-sm)}
+    .tab{font-size:var(--font-md);font-weight:600;line-height:1.3}
+    .card{padding:var(--card-padding)}
+    .stack,.analytics-grid,.dashboard-side{gap:var(--layout-gap)}
+    .dashboard-layout{gap:var(--layout-gap)}
+    .section-head{margin-bottom:20px}
+    .section-head h2,.card h2,.card h3{font-size:var(--font-xl);line-height:var(--title-line-height)}
+    .highlight{padding:var(--card-padding)}
+    .highlight>h2,#weeklyFull>.section-head h2,#monthlyFull>.section-head h2{font-size:var(--font-2xl)}
+    .highlight-grid{gap:18px;margin-top:20px}
+    .highlight-tile{padding:18px}
+    .highlight-tile small{font-size:var(--font-sm);line-height:1.5}
+    .highlight-tile strong{font-size:var(--font-xl)}
+    .highlight-tile p{font-size:var(--font-sm);line-height:1.6}
+    .stats{gap:16px;margin-bottom:24px}
+    .stat{padding:24px}
+    .stat-label{font-size:var(--font-md)!important;line-height:1.4}
+    .stat b{font-size:var(--font-kpi);font-weight:700;line-height:1.15}
+    .stat-delta{font-size:var(--font-xs)!important;line-height:1.5}
+    .chart-select,.section-link,.primary,.link-btn,.action,.dashboard-extras summary{font-size:var(--font-md)}
+    input,textarea,select,button{font-size:var(--font-md)}
+    .mini-report p,#weeklyFull p,#weeklyFull li{font-size:var(--font-md);line-height:1.7}
+    .mini-report .primary{font-size:var(--font-md)}
+    .note-date,.highlight-tile p,.stat-delta{font-size:var(--font-sm)}
+    .bar-row,.legend-row,.legend-row b,.time-column,.recent-item b,.recent-item span,.selected-note b,.selected-note span,.calendar-month,.calendar-legend{font-size:var(--font-sm)}
+    .tag,.tag-badge{font-size:var(--font-xs);line-height:1.4}
+    .tag-legend{gap:10px}
+    .recent-item{gap:12px;padding:14px 0}.recent-item>div{min-width:0}
+    .recent-item b{line-height:1.5}.recent-item span{line-height:1.4}
+    .week{font-size:var(--font-sm)}
+    .day{font-size:var(--font-md)}
+    .day.today{font-size:var(--font-lg)}
+    .selected-pane{padding:18px}.selected-note{padding:12px 0}.selected-note b{line-height:1.5}.selected-note span{line-height:1.5}
+    .calendar-legend{margin-top:12px}
+    .notes,.timeline-items,.report-section,.analysis-card,.monthly-analysis{font-size:var(--font-md);line-height:var(--text-line-height)}
+    .raw,.ai,.timeline-item,.report-section p,.report-section li,.analysis-card p,.analysis-card li{font-size:var(--font-md);line-height:var(--text-line-height)}
+    .eyebrow{font-size:var(--font-xs)}
+    .empty,.loading{font-size:var(--font-sm);line-height:1.6}
+    @media(max-width:768px){
+      :root{--card-padding:24px;--font-kpi:42px;--layout-gap:24px}
+      .brand h1{font-size:32px}
+      .brand p{font-size:var(--font-md)}
     }
   </style>
+  <style id="v1-design-system">
+    :root{
+      --page-padding:32px;
+      --layout-gap:24px;
+      --section-gap:32px;
+      --card-padding:28px;
+      --radius-card:20px;
+      --radius-control:16px;
+      --border-card:#e5e7eb;
+      --shadow-card:0 8px 24px rgba(15,35,75,.06);
+      --shadow-card-hover:0 16px 36px rgba(25,62,135,.12);
+      --font-xs:14px;
+      --font-sm:14px;
+      --font-md:16px;
+      --font-lg:18px;
+      --font-xl:20px;
+      --font-2xl:24px;
+      --font-3xl:32px;
+      --font-kpi:48px;
+    }
+    body{font-size:16px}
+    .shell{padding:24px var(--page-padding) 56px}
+    .topbar{display:grid;grid-template-columns:minmax(280px,1fr) auto minmax(320px,1fr);align-items:center;gap:32px;padding:8px 0 24px}
+    .brand{justify-self:start}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#e8f1ff,#eee9ff);font-size:26px}
+    .brand h1{font-size:32px}.brand p{font-size:14px;color:#63759d}
+    .topbar>.head-tools:nth-of-type(1){justify-self:center;justify-content:center}.topbar>.head-tools:last-child{justify-self:end;justify-content:flex-end}
+    .top-date{font-size:14px}.weather{font-size:14px}.growth-pill{font-size:14px}
+    .header-search{height:44px;width:min(300px,22vw);border-radius:16px}.icon-button,.avatar{width:44px;height:44px;transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease}.icon-button:hover,.avatar:hover{transform:scale(1.02);box-shadow:0 8px 20px rgba(37,99,235,.12)}
+    .tabs{height:56px;margin:0 0 var(--section-gap);padding:4px;gap:4px;border-radius:16px;overflow:hidden;background:#fff}
+    .tab{height:46px;border:0!important;border-radius:12px;background:#fff;transition:background-color .2s ease,transform .2s ease,box-shadow .2s ease}.tab:hover{background:#eff6ff;transform:scale(1.01)}.tab.active{background:linear-gradient(135deg,#1769e8,#6948df);box-shadow:0 8px 18px rgba(66,76,210,.22)}
+    .card{padding:var(--card-padding);border:1px solid var(--border-card);border-radius:var(--radius-card);box-shadow:var(--shadow-card);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}.card:hover{transform:translateY(-2px) scale(1.002);border-color:#d8e0ef;box-shadow:var(--shadow-card-hover)}
+    .stack{gap:var(--section-gap)}.dashboard-layout{gap:24px}.analytics-grid,.dashboard-side{gap:24px}.section-head h2,.card h2,.card h3{font-size:20px}.highlight>h2{font-size:24px}
+    .stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;margin-bottom:32px}
+    .stat,.stat:first-child,.stat:last-child{min-height:174px;padding:28px;border:1px solid var(--border-card);border-radius:20px!important;box-shadow:var(--shadow-card);transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+    .stat:hover{transform:translateY(-3px) scale(1.02);border-color:#d8e0ef;box-shadow:var(--shadow-card-hover)}
+    .stat{grid-template-columns:72px minmax(0,1fr);column-gap:20px;align-content:center}.stat-icon{grid-row:1/4;width:72px;height:72px;border-radius:20px;font-size:32px}.stat-label{font-size:18px!important;font-weight:600}.stat b{font-size:48px;font-weight:700;line-height:1.05}.stat-delta{font-size:15px!important}.stat-delta em{font-weight:700}
+    .chart-card{min-height:390px}.trend-chart-wrapper{height:310px;min-height:310px;padding:20px 16px 0}.donut-layout{grid-template-columns:minmax(190px,46%) minmax(0,54%);gap:28px;min-height:310px}.donut{width:176px;height:176px}.donut:after{width:98px;height:98px}.tag-legend{gap:14px}.legend-row,.legend-row b{font-size:16px}
+    .recent-item{position:relative;margin:0 -12px;padding:16px 44px 16px 12px;border-radius:14px;border-bottom:0;transition:background-color .2s ease,transform .2s ease}.recent-item:hover{background:#f3f7ff;transform:scale(1.01)}.recent-item .recent-star{position:absolute;top:14px;right:14px}.recent-item .tag-badge{padding:4px 10px;border-radius:999px}
+    .day{border-radius:12px;transition:background-color .2s ease,transform .2s ease}.day:hover{transform:scale(1.02);background:#eef5ff}.day.selected{background:#e8f2ff}.day.today{border-radius:50%;background:#2563eb}.day.has-note::after{width:5px;height:5px;background:#2563eb}.day .favorite-mark{color:#f5b800;font-size:11px}
+    .primary,.action,.link-btn,.section-link{transition:transform .2s ease,box-shadow .2s ease,background-color .2s ease}.primary:hover,.action:hover,.link-btn:hover,.section-link:hover{transform:scale(1.02)}
+    @media(max-width:1440px){.topbar{grid-template-columns:minmax(250px,1fr) auto minmax(280px,1fr);gap:20px}.header-search{width:min(250px,19vw)}.stat{grid-template-columns:64px minmax(0,1fr);gap:16px}.stat-icon{width:64px;height:64px}}
+    @media(max-width:1200px){:root{--page-padding:24px}.topbar{grid-template-columns:1fr auto}.topbar>.head-tools:nth-of-type(1){grid-column:1/-1;grid-row:2;justify-self:start}.header-search{width:240px}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-layout{grid-template-columns:1fr}.dashboard-side{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-side .calendar-card{grid-column:1/-1}.analytics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.wide{grid-column:1/-1}}
+    @media(max-width:1024px){:root{--page-padding:20px}.topbar{gap:16px}.tabs{overflow-x:auto;justify-content:flex-start}.tab{min-width:170px}.dashboard-side{grid-template-columns:1fr 1fr}.calendar-combined{grid-template-columns:1fr 1.05fr}}
+    @media(max-width:768px){:root{--page-padding:16px;--card-padding:22px;--section-gap:24px}.shell{padding-top:16px}.topbar{display:flex;align-items:stretch;gap:14px}.topbar>.head-tools:nth-of-type(1),.topbar>.head-tools:last-child{width:100%;justify-content:flex-start}.topbar>.head-tools:last-child{display:grid;grid-template-columns:minmax(0,1fr) 44px 44px}.search-wrap,.header-search{width:100%}.brand h1{font-size:28px}.brand p{font-size:14px}.stats{grid-template-columns:1fr;gap:16px}.stat{min-height:156px}.analytics-grid,.dashboard-side,.calendar-combined{grid-template-columns:1fr}.wide,.dashboard-side .calendar-card{grid-column:auto}.chart-card{min-height:360px}.donut-layout{grid-template-columns:1fr;gap:22px}.tag-legend{width:100%}}
+    @media(max-width:480px){:root{--page-padding:12px}.brand-mark{width:44px;height:44px}.brand h1{font-size:25px}.weather,.growth-pill{font-size:13px}.tabs{margin-left:-12px;margin-right:-12px;border-radius:0}.card{padding:20px}.stat{padding:24px;grid-template-columns:64px minmax(0,1fr)}.stat-icon{width:64px;height:64px}.stat b{font-size:42px}.stat-label{font-size:16px!important}.trend-chart-wrapper{padding-left:0;padding-right:0}}
+    @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+  </style>
 </head>
-
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">🌱 AI Growth Notes</div>
-      <div class="subtitle">毎日の小さな成長を記録し、未来の一冊へ</div>
-      <div class="date" id="todayDate"></div>
-    </div>
-
-    <div class="view-tabs" role="tablist" aria-label="表示切替">
-      <button type="button" class="view-tab active" id="dashboardTab" role="tab" aria-selected="true" onclick="showView('dashboard')">Dashboard</button>
-      <button type="button" class="view-tab" id="timelineTab" role="tab" aria-selected="false" onclick="showView('timeline')">Timeline</button>
-    </div>
-
-    <button type="button" class="export-button" onclick="exportMarkdown()">Markdown Export</button>
-
-    <main class="view" id="dashboardView">
-
-    <div class="panel dashboard">
-      <div class="dashboard-title">成長ダッシュボード</div>
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value" id="totalNotes">-</div>
-          <div class="stat-label">総ノート数</div>
+<main class="shell">
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">🌱</span><div><h1>AI Growth Notes</h1><p>毎日の小さな成長を記録し、未来の一冊へ</p></div></div>
+    <div class="head-tools"><strong class="top-date" id="today"></strong><span class="weather"><span class="weather-icon">🌤️</span>30°C 晴れ</span><span class="growth-pill">成長晴れ ☀</span></div>
+    <div class="head-tools"><label class="search-wrap"><input class="header-search" id="searchInput" type="search" aria-label="ノートを検索" placeholder="検索（/ でクイック検索）"><kbd class="shortcut">⌘K</kbd></label><button class="icon-button" aria-label="通知">♢</button><span class="avatar" role="img" aria-label="ユーザー N">N</span></div>
+  </header>
+  <nav class="tabs" aria-label="メインナビゲーション"><button class="tab active" data-view="dashboard"><span class="tab-icon">♜</span>Dashboard</button><button class="tab" data-view="timeline"><span class="tab-icon">◷</span>Timeline</button><button class="tab" data-view="weekly"><span class="tab-icon">▦</span>Weekly Report</button><button class="tab" data-view="monthly"><span class="tab-icon">▣</span>Monthly Report</button><button class="tab" data-view="export"><span class="tab-icon">▣</span>Markdown Export</button></nav>
+  <div class="view" id="dashboardView">
+    <section class="stats" aria-label="主要指標"><div class="stat"><span class="stat-icon">▤</span><span class="stat-label">総ノート数</span><b id="totalStat">0</b><span class="stat-delta">先月比 <em>+32% ↑</em></span></div><div class="stat"><span class="stat-icon">▦</span><span class="stat-label">今週のノート数</span><b id="weekStat" style="color:#11aa5b">0</b><span class="stat-delta">先週比 <em>+75% ↑</em></span></div><div class="stat"><span class="stat-icon">◆</span><span class="stat-label">タグ数</span><b id="tagStat" style="color:#5436e8">0</b><span class="stat-delta">先月比 <em>+17% ↑</em></span></div><div class="stat"><span class="stat-icon">★</span><span class="stat-label">お気に入り数</span><b id="favoriteStat" style="color:#e87500">0</b><span class="stat-delta">先月比 <em>+50% ↑</em></span></div></section>
+    <div class="dashboard-layout">
+      <section class="stack">
+        <div class="analytics-grid">
+          <section class="card highlight wide"><h2>✦　今週のハイライト</h2><div class="highlight-grid"><div class="highlight-tile"><span class="highlight-icon">🎓</span><div><small>最も学習したトピック</small><strong id="topTopic">—</strong><p id="highlightText">今週の学びを集計中です</p></div></div><div class="highlight-tile"><span class="highlight-icon">🔥</span><div><small>最も多かったタグ</small><strong id="topTag">—</strong><p>AI活用が加速しています</p></div></div><div class="highlight-tile"><span class="highlight-icon">↗</span><div><small>学習の継続</small><strong>7日連続</strong><p>素晴らしい継続です！</p></div></div><div class="highlight-tile"><span class="highlight-icon">◎</span><div><small>今週の目標達成</small><strong>80%</strong><p>目標の80%を達成！</p></div></div></div></section>
+          <section class="card chart-card"><div class="section-head"><h2>学習トレンド <small>（過去7日間）</small></h2><select class="chart-select"><option>ノート数</option></select></div><div class="trend-chart-wrapper"><canvas id="trendChart" aria-label="過去7日間の学習トレンド" role="img"></canvas></div></section>
+          <section class="card chart-card"><div class="section-head"><h2>タグ分布　<small id="tagDistributionTitle">Top 0</small></h2></div><div id="tagBars"></div></section>
+          <section class="card topic-card"><div class="section-head"><h2>学習内容トップ</h2><select class="chart-select"><option>今週</option></select></div><div class="topic-list" id="learningTop"></div></section>
+          <section class="card time-card"><div class="section-head"><h2>学習時間 <small>（概算）</small></h2><select class="chart-select"><option>今週</option></select></div><div><b id="learningTime" style="color:#163474">0分</b><span class="note-date">　先週比 <em style="color:#08a653">+60% ↑</em></span></div><div class="time-bars" id="timeBars"></div></section>
         </div>
-        <div class="stat-card">
-          <div class="stat-value" id="todayNotes">-</div>
-          <div class="stat-label">本日のノート数</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="tagCount">-</div>
-          <div class="stat-label">タグ数</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="favoriteNotes">-</div>
-          <div class="stat-label">お気に入り</div>
-        </div>
-      </div>
-      <div class="top-tags-label">よく使われているタグ Top 5</div>
-      <div id="topTags"><span class="top-tags-empty">集計中...</span></div>
+        <details class="dashboard-extras"><summary>ノートを追加・管理</summary><section class="card editor"><div class="section-head"><h2>今日学んだこと</h2></div><textarea id="noteInput" placeholder="今日学んだことや気づきを入力してください。AIが内容を整理し、タグを付けます。"></textarea><button class="primary" id="saveButton">保存してAI整理</button></section><section class="card"><div class="section-head"><h2>成長記録</h2></div><div class="filter" id="filter"><span>現在のフィルター: <b id="filterName"></b></span><button class="link-btn" id="clearFilter">フィルター解除</button></div><div class="notes" id="notesList" style="margin-top:16px"></div></section></details>
+      </section>
+      <aside class="dashboard-side stack">
+        <section class="card mini-report"><div class="section-head"><h3 style="color:#104fd8">🤖　AI Weekly Report</h3><button class="section-link" data-open="weekly">詳細を見る →</button></div><p id="weeklyTeaser">今週の記録をAIが整理し、次の一歩を提案します。</p></section>
+        <section class="card"><div class="section-head"><h3 style="color:#104fd8">▣　最近のノート</h3><button class="section-link" data-open-notes>すべて見る →</button></div><div id="recentNotes"></div></section>
+        <section class="card calendar-card"><div class="section-head"><h3 style="color:#104fd8">▦　学習カレンダー</h3></div><div class="calendar-combined"><div class="calendar-pane"><div class="calendar-head"><span class="calendar-month" id="calendarMonth"></span><button class="section-link">今日</button></div><div class="week"><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span></div><div class="calendar-grid" id="sideCalendar"></div><div class="calendar-legend">● ノートあり　 ★ お気に入り</div></div><div class="selected-pane"><h3 id="selectedDateTitle">今日のノート</h3><div id="selectedDateNotes"></div></div></div></section>
+      </aside>
     </div>
-
-    <button type="button" class="weekly-report-button" id="weeklyReportButton" onclick="loadWeeklyReport()">Weekly Report</button>
-    <section class="panel weekly-report-card" id="weeklyReportCard" aria-live="polite"></section>
-
-    <div class="search-box">
-      <input
-        id="searchInput"
-        type="text"
-        placeholder="🔍 成長記録を検索（例：FastAPI / Prompt / AI）"
-        oninput="searchNotes()"
-      />
-    </div>
-
-    <div class="filter-bar" id="filterBar">
-      <div>現在のフィルター：<span class="current-filter" id="currentFilter"></span></div>
-      <button type="button" class="clear-filter" onclick="clearTagFilter()">フィルターを解除</button>
-    </div>
-
-    <div class="panel">
-      <div class="input-title">📚 今日は何を学びましたか？</div>
-      <textarea
-        id="noteInput"
-        placeholder="例：今日は FastAPI を学び、API とフロントエンド画面の関係を理解しました。また、プロダクトは最小構成から作り始められると気づきました。"
-      ></textarea>
-      <button onclick="saveNote()">✨ 保存して AI で整理</button>
-    </div>
-
-    <div class="notes-title">📖 私の成長記録</div>
-    <div id="notesList"></div>
-    </main>
-
-    <section class="view panel" id="timelineView" hidden>
-      <div class="timeline-heading">Timeline</div>
-      <div class="timeline-description">日々の成長記録を時系列で振り返ります。</div>
-      <div id="timelineList"></div>
-    </section>
   </div>
-
-  <script>
-    let currentTag = "";
-    let timelineLoaded = false;
-
-    async function exportMarkdown() {
-      const button = document.querySelector(".export-button");
-      button.disabled = true;
-      try {
-        const response = await fetch("/api/export/markdown");
-        if (!response.ok) throw new Error("Export failed");
-        const disposition = response.headers.get("Content-Disposition") || "";
-        const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || "ai-growth-notes.md";
-        const url = URL.createObjectURL(await response.blob());
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
-      } catch (error) {
-        alert("Markdown のエクスポートに失敗しました。");
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-    function showView(view) {
-      const isTimeline = view === "timeline";
-      document.getElementById("dashboardView").hidden = isTimeline;
-      document.getElementById("timelineView").hidden = !isTimeline;
-      document.getElementById("dashboardTab").classList.toggle("active", !isTimeline);
-      document.getElementById("timelineTab").classList.toggle("active", isTimeline);
-      document.getElementById("dashboardTab").setAttribute("aria-selected", String(!isTimeline));
-      document.getElementById("timelineTab").setAttribute("aria-selected", String(isTimeline));
-      if (isTimeline && !timelineLoaded) loadTimeline();
-    }
-
-    async function loadTimeline() {
-      const list = document.getElementById("timelineList");
-      list.innerHTML = '<div class="empty">読み込み中...</div>';
-      const res = await fetch("/api/timeline");
-      if (!res.ok) {
-        list.innerHTML = '<div class="empty">Timeline の読み込みに失敗しました。</div>';
-        return;
-      }
-      const groups = await res.json();
-      timelineLoaded = true;
-      if (groups.length === 0) {
-        list.innerHTML = '<div class="empty">まだ成長記録がありません。</div>';
-        return;
-      }
-      list.innerHTML = groups.map(group => `
-        <section class="timeline-group">
-          <button type="button" class="timeline-date" aria-expanded="true">
-            <span>${escapeHtml(group.label)}</span>
-            <span><span class="timeline-count">${group.notes.length}件</span> <span class="timeline-chevron">▼</span></span>
-          </button>
-          <div class="timeline-items">
-            ${group.notes.map(note => `
-              <article class="timeline-item">
-                <div class="timeline-time">${escapeHtml(formatTimelineTime(note.created_at))}</div>
-                <div class="timeline-note-text">${escapeHtml(note.raw_text)}</div>
-              </article>
-            `).join("")}
-          </div>
-        </section>
-      `).join("");
-    }
-
-    function formatTimelineTime(createdAt) {
-      const parts = String(createdAt || "").split(" ");
-      return parts.length > 1 ? parts[1].slice(0, 5) : "";
-    }
-    function setTodayDate() {
-      const now = new Date();
-      const weekdays = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
-
-      const text =
-        "📅 " +
-        now.getFullYear() + "年" +
-        (now.getMonth() + 1) + "月" +
-        now.getDate() + "日 " +
-        weekdays[now.getDay()];
-
-      document.getElementById("todayDate").innerText = text;
-    }
-
-    async function saveNote() {
-      const text = document.getElementById("noteInput").value.trim();
-
-      if (!text) {
-        alert("内容を入力してください");
-        return;
-      }
-
-      await fetch("/api/notes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-
-      document.getElementById("noteInput").value = "";
-      document.getElementById("searchInput").value = "";
-      currentTag = "";
-      updateFilterDisplay();
-      await Promise.all([loadNotes(), loadStats()]);
-      timelineLoaded = false;
-    }
-
-    async function loadStats() {
-      const res = await fetch("/api/stats");
-      if (!res.ok) return;
-
-      const stats = await res.json();
-      document.getElementById("totalNotes").textContent = stats.total_notes;
-      document.getElementById("todayNotes").textContent = stats.today_notes;
-      document.getElementById("tagCount").textContent = stats.tag_count;
-      document.getElementById("favoriteNotes").textContent = stats.favorite_notes;
-
-      const topTags = document.getElementById("topTags");
-      if (stats.top_tags.length === 0) {
-        topTags.innerHTML = '<span class="top-tags-empty">タグはまだありません</span>';
-        return;
-      }
-
-      topTags.innerHTML = stats.top_tags.map(item => `
-        <button type="button" class="tag" data-tag="${escapeHtml(item.tag)}">
-          #${escapeHtml(item.tag)}<span class="top-tag-count">${item.count}</span>
-        </button>
-      `).join("");
-    }
-
-    async function loadWeeklyReport() {
-      const button = document.getElementById("weeklyReportButton");
-      const card = document.getElementById("weeklyReportCard");
-      button.disabled = true;
-      card.classList.add("active");
-      card.innerHTML = '<div class="empty">Weekly Report を生成中...</div>';
-
-      try {
-        const response = await fetch("/api/report/weekly");
-        if (!response.ok) throw new Error("Weekly report failed");
-        const report = await response.json();
-        const learned = report.learned_contents.length
-          ? report.learned_contents.map(item => `<li>${escapeHtml(item)}</li>`).join("")
-          : "<li>今週の学習記録はまだありません。</li>";
-        const tags = report.frequent_tags.length
-          ? report.frequent_tags.map(item => `<span class="tag">#${escapeHtml(item.tag)} <span class="top-tag-count">${item.count}</span></span>`).join("")
-          : '<span class="top-tags-empty">タグはまだありません</span>';
-        const suggestions = report.next_week_suggestions
-          .map(item => `<li>${escapeHtml(item)}</li>`).join("");
-
-        card.innerHTML = `
-          <div class="weekly-report-header">
-            <div class="weekly-report-title">Weekly Report</div>
-            <div class="weekly-report-period">${escapeHtml(report.period.start)} 〜 ${escapeHtml(report.period.end)}</div>
-          </div>
-          <div class="weekly-report-section"><h3>今週学習した内容</h3><ul>${learned}</ul></div>
-          <div class="weekly-report-section"><h3>頻出タグ</h3><div>${tags}</div></div>
-          <div class="weekly-report-section"><h3>AIによる総括</h3><p class="weekly-report-summary">${escapeHtml(report.ai_summary)}</p></div>
-          <div class="weekly-report-section"><h3>来週の学習提案</h3><ul>${suggestions}</ul></div>
-          <div class="weekly-report-meta">${report.note_count}件の記録を集計 / ${escapeHtml(report.provider)}</div>
-        `;
-      } catch (error) {
-        card.innerHTML = '<div class="empty">Weekly Report の生成に失敗しました。</div>';
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-    async function loadNotes() {
-      const params = new URLSearchParams();
-      if (currentTag) params.set("tag", currentTag);
-
-      const query = params.toString();
-      const res = await fetch(query ? `/api/notes?${query}` : "/api/notes");
-      const notes = await res.json();
-
-      renderNotes(notes);
-    }
-
-    async function searchNotes() {
-      const keyword = document.getElementById("searchInput").value.trim();
-      const params = new URLSearchParams();
-      if (keyword) params.set("q", keyword);
-      if (currentTag) params.set("tag", currentTag);
-
-      const url = keyword
-        ? `/api/search?${params.toString()}`
-        : (params.toString() ? `/api/notes?${params.toString()}` : "/api/notes");
-
-      const res = await fetch(url);
-      const notes = await res.json();
-
-      renderNotes(notes);
-    }
-
-    function selectTag(tag) {
-      currentTag = tag;
-      updateFilterDisplay();
-      searchNotes();
-    }
-
-    function clearTagFilter() {
-      currentTag = "";
-      updateFilterDisplay();
-      searchNotes();
-    }
-
-    function updateFilterDisplay() {
-      const filterBar = document.getElementById("filterBar");
-      document.getElementById("currentFilter").textContent = currentTag ? `#${currentTag}` : "";
-      filterBar.classList.toggle("active", Boolean(currentTag));
-    }
-
-    function renderNotes(notes) {
-      const notesList = document.getElementById("notesList");
-      notesList.innerHTML = "";
-
-      if (notes.length === 0) {
-        notesList.innerHTML = `<div class="empty">該当する成長記録が見つかりませんでした。</div>`;
-        return;
-      }
-
-      notes.forEach(note => {
-        const card = document.createElement("div");
-        card.className = "note-card";
-
-        const tagsHtml = note.tags && note.tags.length > 0
-          ? note.tags.map(tag => `
-              <button
-                type="button"
-                class="tag${tag.toLocaleLowerCase() === currentTag.toLocaleLowerCase() ? " active" : ""}"
-                data-tag="${escapeHtml(tag)}"
-              >#${escapeHtml(tag)}</button>
-            `).join("")
-          : `<span class="tag">#未分類</span>`;
-
-        card.dataset.noteId = note.id;
-        card.innerHTML = `
-          <div class="note-header">
-            <div class="note-date">📅 ${note.created_at}</div>
-            <div class="note-actions">
-              <button type="button" class="note-action favorite-button${note.is_favorite ? " active" : ""}" data-action="favorite" aria-label="お気に入りを切り替え">★</button>
-              <button type="button" class="note-action" data-action="edit">編集</button>
-              <button type="button" class="note-action delete-button" data-action="delete">削除</button>
-            </div>
-          </div>
-
-          <div class="section-label">📝 元のノート</div>
-          <div class="raw">${escapeHtml(note.raw_text)}</div>
-
-          <div class="section-label">🏷 タグ</div>
-          <div class="tags">${tagsHtml}</div>
-
-          <div class="section-label">🤖 AI による自動整理</div>
-          <div class="ai">${escapeHtml(note.ai_summary)}</div>
-        `;
-
-        notesList.appendChild(card);
-      });
-    }
-
-    function escapeHtml(text) {
-      return String(text || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
-
-    async function toggleFavorite(card) {
-      const button = card.querySelector('[data-action="favorite"]');
-      const isFavorite = !button.classList.contains("active");
-      const res = await fetch(`/api/notes/${card.dataset.noteId}/favorite`, {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_favorite: isFavorite })
-      });
-      if (!res.ok) return alert("お気に入りの更新に失敗しました。");
-      button.classList.toggle("active", isFavorite);
-      await loadStats();
-    }
-
-    function startEdit(card) {
-      if (card.querySelector(".edit-area")) return;
-      const raw = card.querySelector(".raw");
-      raw.hidden = true;
-      raw.insertAdjacentHTML("afterend", `
-        <textarea class="edit-area">${escapeHtml(raw.textContent)}</textarea>
-        <div class="edit-actions">
-          <button type="button" data-action="save-edit">保存してAI整理を再実行</button>
-          <button type="button" class="cancel-button" data-action="cancel-edit">キャンセル</button>
-        </div>`);
-    }
-
-    function cancelEdit(card) {
-      card.querySelector(".raw").hidden = false;
-      card.querySelector(".edit-area")?.remove();
-      card.querySelector(".edit-actions")?.remove();
-    }
-
-    async function saveEdit(card) {
-      const text = card.querySelector(".edit-area").value.trim();
-      if (!text) return alert("内容を入力してください。");
-      const res = await fetch(`/api/notes/${card.dataset.noteId}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
-      });
-      if (!res.ok) return alert("ノートの更新に失敗しました。");
-      await Promise.all([searchNotes(), loadStats()]);
-      timelineLoaded = false;
-    }
-
-    async function deleteNote(card) {
-      if (!confirm("このノートを削除しますか？この操作は取り消せません。")) return;
-      const res = await fetch(`/api/notes/${card.dataset.noteId}`, { method: "DELETE" });
-      if (!res.ok) return alert("ノートの削除に失敗しました。");
-      await Promise.all([searchNotes(), loadStats()]);
-      timelineLoaded = false;
-    }
-
-    document.getElementById("notesList").addEventListener("click", event => {
-      const actionButton = event.target.closest("button[data-action]");
-      if (actionButton) {
-        const card = actionButton.closest(".note-card");
-        const actions = { favorite: toggleFavorite, edit: startEdit,
-          "cancel-edit": cancelEdit, "save-edit": saveEdit, delete: deleteNote };
-        actions[actionButton.dataset.action]?.(card);
-        return;
-      }
-      const tagButton = event.target.closest("button.tag[data-tag]");
-      if (tagButton) selectTag(tagButton.dataset.tag);
-    });
-
-    document.getElementById("topTags").addEventListener("click", event => {
-      const tagButton = event.target.closest("button.tag[data-tag]");
-      if (tagButton) selectTag(tagButton.dataset.tag);
-    });
-
-    document.getElementById("timelineList").addEventListener("click", event => {
-      const button = event.target.closest(".timeline-date");
-      if (!button) return;
-      const group = button.closest(".timeline-group");
-      const collapsed = group.classList.toggle("collapsed");
-      button.setAttribute("aria-expanded", String(!collapsed));
-    });
-
-    setTodayDate();
-    updateFilterDisplay();
-    Promise.all([loadNotes(), loadStats()]);
-  </script>
+  <div class="view" id="timelineView" hidden><section class="card"><div class="eyebrow">学習履歴</div><h2>タイムライン</h2><p style="color:var(--muted)">日付ごとの学習記録を振り返れます。</p><div id="timelineList"></div></section></div>
+  <div class="view" id="weeklyView" hidden><section class="card" id="weeklyFull"><div class="loading">Weekly Reportを作成しています…</div></section></div>
+  <div class="view" id="monthlyView" hidden><section class="card" id="monthlyFull"><div class="loading">Monthly Reportを作成しています…</div></section></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.9/dist/chart.umd.min.js"></script>
+<script>
+  let currentTag="",notesCache=[],statsCache={},weeklyCache=null,monthlyCache=null,calendarCache=null,trendChartInstance=null,selectedDate=localDateKey(new Date());
+  const $=id=>document.getElementById(id),esc=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+  async function request(url,options){const response=await fetch(url,options);if(!response.ok)throw new Error((await response.json().catch(()=>({}))).detail||"通信に失敗しました");return response.json()}
+  function setView(name){if(name==="export"){location.href="/api/export/markdown";return}document.querySelectorAll(".view").forEach(v=>v.hidden=v.id!==name+"View");document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===name));if(name==="dashboard")requestAnimationFrame(()=>{if(trendChartInstance){trendChartInstance.resize()}else{renderTrendChart(notesCache)}});if(name==="timeline")loadTimeline();if(name==="weekly")loadWeekly();if(name==="monthly")loadMonthly()}
+  async function refresh(){await Promise.all([loadNotes(),loadStats(),loadWeeklyTeaser()]);renderRecent(notesCache);requestAnimationFrame(()=>renderTrendChart(notesCache));await Promise.all([loadDashboardCalendar(),loadSelectedDate(selectedDate)])}
+  async function loadNotes(){const q=$("searchInput").value.trim(),p=new URLSearchParams();if(q)p.set("q",q);if(currentTag)p.set("tag",currentTag);notesCache=await request(q?`/api/search?${p}`:`/api/notes${p.toString()?"?"+p:""}`);renderNotes(notesCache)}
+  async function loadStats(){statsCache=await request("/api/stats");$("totalStat").textContent=statsCache.total_notes;$("weekStat").textContent=statsCache.week_notes;$("tagStat").textContent=statsCache.tag_count;$("favoriteStat").textContent=statsCache.favorite_notes;$("learningTime").textContent=`${Math.floor(statsCache.week_notes*15/60)}時間 ${statsCache.week_notes*15%60}分`;renderTagBars(statsCache.tag_distribution||statsCache.top_tags);renderLearningTop(statsCache.top_tags);const top=statsCache.top_tags?.[0];$("topTopic").textContent=top?.tag||"—";$("topTag").textContent=top?`#${top.tag}`:"—";$("highlightText").textContent=top?`${top.count} ノート`:"記録を追加してください";renderTimeBars()}
+  function renderLearningTop(tags=[]){$("learningTop").innerHTML=tags.length?tags.slice(0,5).map(x=>`<div class="bar-row"><span>${esc(x.tag)}</span><div class="bar"><i style="width:${Math.max(18,x.count/(tags[0]?.count||1)*100)}%"></i></div><b>${x.count}</b></div>`).join(""):'<p class="empty">学習データはまだありません</p>'}
+  function renderTagBars(tags=[]){const colors=["#3b68ea","#4cc585","#ffad09","#a64de8","#e55d78","#8d6adf","#b8c2d5"],total=tags.reduce((sum,x)=>sum+x.count,0),top=tags.slice(0,6),otherCount=tags.slice(6).reduce((sum,x)=>sum+x.count,0),chartData=otherCount?[...top,{tag:"その他",count:otherCount,isOther:true}]:top;$("tagDistributionTitle").textContent=`Top ${top.length}`;if(!chartData.length){$("tagBars").innerHTML='<p class="empty">タグはまだありません</p>';return}let cursor=0;const gradient=chartData.map((x,i)=>{const start=cursor;cursor+=x.count/total*100;return `${colors[i]} ${start}% ${cursor}%`}).join(",");$("tagBars").innerHTML=`<div class="donut-layout"><div class="donut" style="background:conic-gradient(${gradient})"></div><div class="tag-legend">${chartData.map((x,i)=>{const content=`<i class="legend-dot" style="background:${colors[i]}"></i><span>${x.isOther?"その他":"#"+esc(x.tag)}</span><b>${Math.round(x.count/total*100)}%　(${x.count})</b>`;return x.isOther?`<div class="legend-row">${content}</div>`:`<button class="legend-row" data-tag="${esc(x.tag)}" style="border:0;background:none;padding:0;text-align:left">${content}</button>`}).join("")}</div></div>`}
+  function renderTrendChart(notes){const canvas=$("trendChart");if(!canvas||typeof Chart==="undefined")return;const today=new Date(),days=Array.from({length:7},(_,i)=>{const d=new Date(today);d.setHours(0,0,0,0);d.setDate(d.getDate()-(6-i));return d}),counts=new Map();notes.forEach(n=>{const key=(n.created_at||"").slice(0,10);counts.set(key,(counts.get(key)||0)+1)});const values=days.map(d=>counts.get(localDateKey(d))||0);if(trendChartInstance){trendChartInstance.destroy();trendChartInstance=null}trendChartInstance=new Chart(canvas,{type:"line",data:{labels:days.map(d=>`${d.getMonth()+1}/${d.getDate()}`),datasets:[{data:values,borderColor:"#2464ee",backgroundColor:"rgba(57,112,239,.18)",borderWidth:3,fill:true,tension:.25,pointRadius:5,pointHoverRadius:6,pointBackgroundColor:"#fff",pointBorderColor:"#2464ee",pointBorderWidth:3}]},options:{responsive:true,maintainAspectRatio:false,animation:false,layout:{padding:{top:12}},plugins:{legend:{display:false},tooltip:{displayColors:false,titleFont:{size:15},bodyFont:{size:15}}},scales:{x:{grid:{display:false},ticks:{color:"#65779b",font:{size:15}},border:{display:false}},y:{beginAtZero:true,ticks:{color:"#8290aa",precision:0,font:{size:15}},grid:{color:"#e5ebf6"},border:{display:false}}}}});trendChartInstance.resize()}
+  function renderTimeBars(){const vals=[45,25,35,135,65,115,82],dates=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-6+i);return `${d.getMonth()+1}/${d.getDate()}`});$("timeBars").innerHTML=vals.map((v,i)=>`<div class="time-column"><i style="height:${v/1.2}px"></i><span>${dates[i]}</span></div>`).join("")}
+  function renderNotes(notes){$("notesList").innerHTML=notes.length?notes.map(n=>`<article class="note" data-id="${n.id}"><div class="note-head"><span class="note-date">${esc(n.created_at)}</span><div class="actions"><button class="action favorite ${n.is_favorite?"active":""}" data-action="favorite">★</button><button class="action" data-action="edit">編集</button><button class="action danger" data-action="delete">削除</button></div></div><div class="raw">${esc(n.raw_text)}</div><div class="ai">${esc(n.ai_summary)}</div><div class="tags">${(n.tags||[]).map(t=>`<button class="tag ${t.toLowerCase()===currentTag.toLowerCase()?"active":""}" data-tag="${esc(t)}">#${esc(t)}</button>`).join("")||'<span class="tag">#未分類</span>'}</div></article>`).join(""):'<div class="empty">該当するノートはありません</div>'}
+  function renderRecent(notes){$("recentNotes").innerHTML=notes.slice(0,5).map(n=>`<div class="recent-item"><span class="recent-doc">▤</span><div><b>${esc(n.raw_text)}</b><div class="tags">${(n.tags||[]).slice(0,2).map(t=>`<span class="tag-badge">#${esc(t)}</span>`).join("")}</div></div><span>${esc((n.created_at||"").slice(5,16))}</span><i class="recent-star" aria-label="${n.is_favorite?"お気に入り":"通常"}">${n.is_favorite?"★":"☆"}</i></div>`).join("")||'<div class="empty">まだありません</div>'}
+  async function loadDashboardCalendar(){const now=new Date(),year=now.getFullYear(),month=now.getMonth()+1;if(!calendarCache)calendarCache=await request(`/api/calendar?year=${year}&month=${month}`);$("calendarMonth").textContent=`${year}年 ${month}月`;$("sideCalendar").innerHTML=monthCalendar(year,month,calendarCache)}
+  async function loadSelectedDate(date){selectedDate=date;$("selectedDateTitle").textContent=`${date.slice(5).replace("-","/")} のノート`;$("selectedDateNotes").innerHTML='<div class="loading">読み込み中…</div>';const notes=await request(`/api/notes?date=${encodeURIComponent(date)}`);$("selectedDateNotes").innerHTML=notes.length?notes.map(n=>`<div class="selected-note"><b>${n.is_favorite?"<span aria-label='お気に入り'>★</span> ":""}${esc(n.raw_text)}</b><span>${esc((n.created_at||"").slice(11,16))}</span><div class="tags">${(n.tags||[]).map(t=>`<span class="tag-badge">#${esc(t)}</span>`).join("")}</div></div>`).join(""):'<div class="empty">この日のノートはありません</div>';document.querySelectorAll(".day").forEach(day=>day.classList.toggle("selected",day.dataset.date===date))}
+  async function loadWeeklyTeaser(){if(!weeklyCache)weeklyCache=await request("/api/report/weekly");$("weeklyTeaser").textContent=weeklyCache.ai_summary}
+  async function loadTimeline(){$("timelineList").innerHTML='<div class="loading">読み込み中…</div>';const groups=await request("/api/timeline");$("timelineList").innerHTML=groups.length?groups.map(g=>`<div class="timeline-group"><button class="timeline-title">${esc(g.label)}　${g.notes.length}件</button><div class="timeline-items">${g.notes.map(n=>`<div class="timeline-item"><div class="note-date">${esc((n.created_at||"").slice(11,16))}</div>${esc(n.raw_text)}</div>`).join("")}</div></div>`).join(""):'<div class="empty">記録はまだありません</div>'}
+  async function loadWeekly(){if(!weeklyCache)weeklyCache=await request("/api/report/weekly");const r=weeklyCache;$("weeklyTeaser").textContent=r.ai_summary;$("weeklyFull").innerHTML=`<div class="eyebrow">AI Weekly Report</div><div class="section-head"><h2>今週の成長レポート</h2><span class="note-date">${r.period.start} — ${r.period.end}</span></div><div class="report-grid"><div class="stat"><b>${r.note_count}</b><span>ノート数</span></div><div class="stat"><b>${r.frequent_tags.length}</b><span>主要タグ</span></div></div><div class="report-section"><h3>学習内容トップ</h3>${list(r.learned_contents)}</div><div class="report-section"><h3>AIによる今週の総括</h3><p>${esc(r.ai_summary)}</p></div><div class="report-section"><h3>来週へのおすすめアクション</h3>${list(r.next_week_suggestions)}</div>`}
+  async function loadMonthly(){if(!monthlyCache)monthlyCache=await request("/api/report/monthly");const r=monthlyCache,tags=r.tag_analysis||[];$("monthlyFull").innerHTML=`<div class="eyebrow">Monthly Report</div><div class="section-head"><h2>${r.period.year}年${r.period.month}月の学習分析</h2><span class="note-date">${r.period.start} — ${r.period.end}</span></div><div class="monthly-analysis"><section class="analysis-card wide"><div class="eyebrow">AI Summary</div><h3>AIによる月次総括</h3><p>${esc(r.ai_summary)}</p></section><section class="analysis-card"><div class="eyebrow">Monthly Highlights</div><h3>今月のハイライト</h3>${r.highlights.length?list(r.highlights.map(x=>x.text)):'<p class="empty">まだありません</p>'}</section><section class="analysis-card"><div class="eyebrow">Learning Statistics</div><h3>学習統計</h3><div class="report-grid"><div class="stat"><b>${r.note_count}</b><span>ノート数</span></div><div class="stat"><b>${r.learning_days}</b><span>学習日数</span></div><div class="stat"><b>${r.new_tag_count}</b><span>タグ数</span></div><div class="stat"><b>${r.favorite_count}</b><span>お気に入り</span></div></div></section><section class="analysis-card"><div class="eyebrow">Tag Analysis</div><h3>タグ分析</h3>${tagAnalysis(tags)}</section><section class="analysis-card"><div class="eyebrow">Next Month Goals</div><h3>来月の目標</h3>${list(r.recommended_actions)}</section><section class="analysis-card wide"><div class="eyebrow">Recommended Learning</div><h3>次に学ぶこと</h3>${recommendedLearning(tags)}</section></div>`}
+  function list(items=[]){return items.length?`<ul>${items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:'<p class="empty">データがありません</p>'}
+  function tagAnalysis(tags=[]){return tags.length?tags.map(x=>`<div class="bar-row"><span>#${esc(x.tag)}</span><div class="bar"><i style="width:${Math.max(18,x.count/(tags[0]?.count||1)*100)}%"></i></div><b>${x.count}</b></div>`).join(""):'<p class="empty">タグデータがありません</p>'}
+  function recommendedLearning(tags=[]){return tags.length?`<p style="color:var(--muted)">今月よく学んだテーマから、理解を一段深めましょう。</p>${tags.slice(0,3).map(x=>`<button class="tag" data-tag="${esc(x.tag)}">#${esc(x.tag)}</button>`).join("")}`:'<p class="empty">記録を追加すると学習テーマを提案します</p>'}
+  function localDateKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
+  function monthCalendar(year,month,entries=[]){const first=new Date(year,month-1,1),mondayOffset=(first.getDay()+6)%7,gridStart=new Date(year,month-1,1-mondayOffset),byDate=new Map(entries.map(x=>[x.date,x])),todayKey=localDateKey(new Date());return Array.from({length:42},(_,i)=>{const d=new Date(gridStart);d.setDate(gridStart.getDate()+i);const key=localDateKey(d),outside=d.getMonth()!==month-1,item=byDate.get(key);return `<button class="day ${outside?"outside":""} ${key===todayKey?"today":""} ${item?.count?"has-note":""} ${key===selectedDate?"selected":""}" data-date="${key}" title="${key}${item?`・${item.count}件`:""}">${d.getDate()}${item?.favorite?'<span class="favorite-mark" aria-label="お気に入りあり">★</span>':""}</button>`}).join("")}
+  async function save(){const text=$("noteInput").value.trim();if(!text)return alert("内容を入力してください。");$("saveButton").disabled=true;try{await request("/api/notes",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});$("noteInput").value="";weeklyCache=monthlyCache=calendarCache=null;selectedDate=localDateKey(new Date());await refresh()}catch(e){alert(e.message)}finally{$("saveButton").disabled=false}}
+  async function noteAction(button){const card=button.closest(".note"),id=card.dataset.id,action=button.dataset.action;if(action==="favorite"){await request(`/api/notes/${id}/favorite`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({is_favorite:!button.classList.contains("active")})});calendarCache=null;return refresh()}if(action==="delete"){if(confirm("このノートを削除しますか？")){await request(`/api/notes/${id}`,{method:"DELETE"});weeklyCache=monthlyCache=calendarCache=null;await refresh()}return}if(action==="edit"){const raw=card.querySelector(".raw");raw.hidden=true;raw.insertAdjacentHTML("afterend",`<textarea class="edit-area">${esc(raw.textContent)}</textarea><div class="edit-actions"><button class="primary" data-action="save-edit">保存してAI整理</button><button class="action" data-action="cancel-edit">キャンセル</button></div>`)}if(action==="cancel-edit"){card.querySelector(".raw").hidden=false;card.querySelector(".edit-area").remove();card.querySelector(".edit-actions").remove()}if(action==="save-edit"){const text=card.querySelector(".edit-area").value.trim();if(!text)return alert("内容を入力してください。");await request(`/api/notes/${id}`,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({text})});weeklyCache=monthlyCache=calendarCache=null;await refresh()}}
+  document.querySelectorAll(".tab").forEach(b=>b.onclick=()=>setView(b.dataset.view));document.querySelector("[data-open=weekly]").onclick=()=>setView("weekly");$("saveButton").onclick=save;$("searchInput").oninput=()=>loadNotes();$("clearFilter").onclick=()=>{currentTag="";$("filter").classList.remove("active");loadNotes()};document.body.onclick=e=>{const day=e.target.closest(".day[data-date]");if(day){loadSelectedDate(day.dataset.date);return}const tag=e.target.closest("[data-tag]");if(tag){currentTag=tag.dataset.tag;$("filterName").textContent="#"+currentTag;$("filter").classList.add("active");setView("dashboard");loadNotes()}const action=e.target.closest("[data-action]");if(action)noteAction(action);const title=e.target.closest(".timeline-title");if(title)title.parentElement.classList.toggle("closed")};$("today").textContent=new Intl.DateTimeFormat("ja-JP",{year:"numeric",month:"long",day:"numeric",weekday:"short"}).format(new Date());refresh();
+</script>
 </body>
 </html>

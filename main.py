@@ -1,6 +1,7 @@
 import sqlite3
 from collections import Counter
 from datetime import datetime, timedelta
+import calendar
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
@@ -8,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from ai_client import analyze_note_with_tags, extract_tags
+from ai_client import analyze_note_with_tags, extract_tags, normalize_tag, normalize_tags_in_text
 from services.export_service import build_markdown
 from services.weekly_report_service import build_weekly_report
 
@@ -140,7 +141,7 @@ def set_favorite(note_id: int, favorite: FavoriteInput):
 
 
 @app.get("/api/notes")
-def list_notes(tag: str = ""):
+def list_notes(tag: str = "", date: str = ""):
     conn = sqlite3.connect(DB)
     cur = conn.cursor()
 
@@ -158,7 +159,11 @@ def list_notes(tag: str = ""):
     rows = cur.fetchall()
     conn.close()
 
-    return filter_notes_by_tag(format_notes(rows), tag)
+    notes = filter_notes_by_tag(format_notes(rows), tag)
+    selected_date = date.strip()
+    if selected_date:
+        notes = [note for note in notes if (note["created_at"] or "")[:10] == selected_date]
+    return notes
 
 
 @app.get("/api/stats")
@@ -173,11 +178,18 @@ def get_stats():
     favorite_notes = cur.fetchone()[0]
 
     today = datetime.now().strftime("%Y-%m-%d")
+    week_start = (datetime.now().date() - timedelta(days=6)).isoformat()
     cur.execute(
         "SELECT COUNT(*) FROM notes WHERE substr(created_at, 1, 10) = ?",
         (today,),
     )
     today_notes = cur.fetchone()[0]
+
+    cur.execute(
+        "SELECT COUNT(*) FROM notes WHERE substr(created_at, 1, 10) BETWEEN ? AND ?",
+        (week_start, today),
+    )
+    week_notes = cur.fetchone()[0]
 
     cur.execute("SELECT ai_summary FROM notes")
     summaries = cur.fetchall()
@@ -188,20 +200,123 @@ def get_stats():
         for (summary,) in summaries
         for tag in extract_tags(summary or "")
     )
-    top_tags = sorted(
+    tag_distribution = sorted(
         tag_counts.items(),
         key=lambda item: (-item[1], item[0].casefold()),
-    )[:5]
+    )
+    top_tags = tag_distribution[:5]
 
     return {
         "total_notes": total_notes,
         "today_notes": today_notes,
+        "week_notes": week_notes,
         "favorite_notes": favorite_notes,
         "tag_count": len(tag_counts),
+        "tag_occurrences": sum(tag_counts.values()),
+        "tag_distribution": [
+            {"tag": tag, "count": count}
+            for tag, count in tag_distribution
+        ],
         "top_tags": [
             {"tag": tag, "count": count}
             for tag, count in top_tags
         ],
+    }
+
+
+@app.get("/api/calendar")
+def get_calendar(year: int | None = None, month: int | None = None):
+    now = datetime.now()
+    calendar_year = year or now.year
+    calendar_month = month or now.month
+    if calendar_year < 2000 or calendar_year > 2100 or calendar_month < 1 or calendar_month > 12:
+        raise HTTPException(status_code=422, detail="Invalid year or month")
+
+    month_prefix = f"{calendar_year:04d}-{calendar_month:02d}"
+    conn = sqlite3.connect(DB)
+    rows = conn.execute(
+        """
+        SELECT substr(created_at, 1, 10) AS note_date,
+               COUNT(*) AS note_count,
+               SUM(CASE WHEN is_favorite = 1 THEN 1 ELSE 0 END) AS favorite_count
+        FROM notes
+        WHERE substr(created_at, 1, 7) = ?
+        GROUP BY substr(created_at, 1, 10)
+        ORDER BY note_date
+        """,
+        (month_prefix,),
+    ).fetchall()
+    conn.close()
+    return [
+        {"date": row[0], "count": row[1], "favorite": row[2] or 0}
+        for row in rows
+    ]
+
+
+@app.get("/api/report/monthly")
+def get_monthly_report(year: int | None = None, month: int | None = None):
+    now = datetime.now()
+    report_year = year or now.year
+    report_month = month or now.month
+    if report_year < 2000 or report_year > 2100 or report_month < 1 or report_month > 12:
+        raise HTTPException(status_code=422, detail="Invalid year or month")
+
+    last_day = calendar.monthrange(report_year, report_month)[1]
+    start_date = f"{report_year:04d}-{report_month:02d}-01"
+    end_date = f"{report_year:04d}-{report_month:02d}-{last_day:02d}"
+    conn = sqlite3.connect(DB)
+    rows = conn.execute(
+        """
+        SELECT id, raw_text, ai_summary, created_at, is_favorite
+        FROM notes
+        WHERE substr(created_at, 1, 10) BETWEEN ? AND ?
+        ORDER BY created_at DESC, id DESC
+        """,
+        (start_date, end_date),
+    ).fetchall()
+    conn.close()
+
+    notes = format_notes(rows)
+    active_dates = sorted({(note["created_at"] or "")[:10] for note in notes if note["created_at"]})
+    tag_counts = Counter(tag for note in notes for tag in note["tags"])
+    highlights = [
+        {
+            "id": note["id"],
+            "text": note["raw_text"],
+            "created_at": note["created_at"],
+            "is_favorite": note["is_favorite"],
+        }
+        for note in sorted(notes, key=lambda item: (not item["is_favorite"], item["created_at"] or ""))[:3]
+    ]
+    top_topics = ", ".join(f"#{tag}" for tag, _ in tag_counts.most_common(3))
+    if notes:
+        ai_summary = (
+            f"今月は{len(notes)}件の学習記録を、{len(active_dates)}日間にわたって残しました。"
+            + (f" 特に{top_topics}への関心が高まりました。" if top_topics else " 継続的な振り返りができています。")
+        )
+        suggestions = [
+            "最も多かったテーマを1つ選び、成果物としてまとめる",
+            "学習した翌日に短い復習ノートを追加する",
+            "お気に入りノートを見直し、次の具体的な行動を決める",
+        ]
+    else:
+        ai_summary = "今月の学習記録はまだありません。最初の小さな気づきを残してみましょう。"
+        suggestions = ["1日1件、学んだことや気づきを短く記録する"]
+
+    return {
+        "period": {"year": report_year, "month": report_month, "start": start_date, "end": end_date},
+        "note_count": len(notes),
+        "learning_days": len(active_dates),
+        "new_tag_count": len(tag_counts),
+        "favorite_count": sum(1 for note in notes if note["is_favorite"]),
+        "tag_analysis": [
+            {"tag": tag, "count": count}
+            for tag, count in tag_counts.most_common(5)
+        ],
+        "highlights": highlights,
+        "ai_summary": ai_summary,
+        "recommended_actions": suggestions,
+        "calendar": {"active_dates": active_dates, "counts": dict(Counter((note["created_at"] or "")[:10] for note in notes))},
     }
 
 
@@ -326,7 +441,7 @@ def format_notes(rows):
         {
             "id": row[0],
             "raw_text": row[1],
-            "ai_summary": row[2],
+            "ai_summary": normalize_tags_in_text(row[2]),
             "tags": extract_tags(row[2]),
             "created_at": row[3],
             "is_favorite": bool(row[4])
@@ -336,7 +451,7 @@ def format_notes(rows):
 
 
 def filter_notes_by_tag(notes, tag):
-    selected_tag = tag.strip().lstrip("#")
+    selected_tag = normalize_tag(tag)
 
     if not selected_tag:
         return notes

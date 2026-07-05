@@ -8,6 +8,14 @@ load_dotenv()
 AI_PROVIDER = os.getenv("AI_PROVIDER", "mock")
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash")
 
+TAG_NORMALIZATION_MAP = {
+    "学习": "学習",
+    "成长": "成長",
+    "AI学习": "AI学習",
+    "学习记录": "学習記録",
+    "成长记录": "成長記録",
+}
+
 
 # ==========================
 # 外部向け共通インターフェース
@@ -45,7 +53,7 @@ def build_note_prompt(content: str) -> str:
 
 1. テーマを要約する
 2. キーワードを3〜5個抽出する
-3. タグを生成する（必ず #タグ の形式を使用する）
+3. タグを生成する（必ず日本語の #タグ 形式を使用し、中国語表記は使わない）
 4. 今日の学びをまとめる
 5. 次のステップを提案する
 
@@ -135,6 +143,20 @@ def generate_by_gemini(prompt: str) -> str:
 # タグ解析
 # ==========================
 
+def normalize_tag(tag: str) -> str:
+    """既存データを含むタグ表記を、表示・検索用の日本語へ統一する。"""
+    cleaned = str(tag or "").strip().lstrip("#").strip()
+    return TAG_NORMALIZATION_MAP.get(cleaned, cleaned)
+
+
+def normalize_tags_in_text(text: str) -> str:
+    """AI整理本文に含まれるハッシュタグだけを表示用に正規化する。"""
+    return re.sub(
+        r"#([^\s#]+)",
+        lambda match: f"#{normalize_tag(match.group(1))}",
+        text or "",
+    )
+
 def extract_tags(ai_text: str) -> list[str]:
     """
     AIの応答からタグを抽出する
@@ -144,7 +166,7 @@ def extract_tags(ai_text: str) -> list[str]:
     #FastAPI
     """
 
-    tags = re.findall(r"#([^\s#]+)", ai_text)
+    tags = (normalize_tag(tag) for tag in re.findall(r"#([^\s#]+)", ai_text))
 
-    # 重複を除去
-    return list(dict.fromkeys(tags))
+    # 正規化後に重複を除去する（例: 学习 と 学習は同じタグとして扱う）
+    return list(dict.fromkeys(tag for tag in tags if tag))

@@ -54,6 +54,19 @@ class TagFilterTests(unittest.TestCase):
     def test_empty_tag_preserves_existing_list_behavior(self):
         self.assertEqual(len(main.list_notes(tag="")), 3)
 
+    def test_list_notes_can_filter_by_calendar_date(self):
+        self.assertEqual(len(main.list_notes(date="2026-07-05")), 3)
+        self.assertEqual(main.list_notes(date="2026-07-04"), [])
+
+    @patch("main.datetime")
+    def test_calendar_aggregates_counts_and_favorites(self, mock_datetime):
+        mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 0)
+        main.set_favorite(1, main.FavoriteInput(is_favorite=True))
+
+        result = main.get_calendar()
+
+        self.assertEqual(result, [{"date": "2026-07-05", "count": 3, "favorite": 1}])
+
     @patch("main.datetime")
     def test_timeline_groups_notes_by_date_and_labels_today(self, mock_datetime):
         mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 0)
@@ -80,10 +93,28 @@ class TagFilterTests(unittest.TestCase):
 
         self.assertEqual(stats["total_notes"], 3)
         self.assertEqual(stats["today_notes"], 3)
+        self.assertEqual(stats["week_notes"], 3)
         self.assertEqual(stats["favorite_notes"], 0)
         self.assertEqual(stats["tag_count"], 4)
         self.assertEqual(stats["top_tags"][0], {"tag": "AI", "count": 2})
         self.assertEqual(len(stats["top_tags"]), 4)
+        self.assertEqual(stats["tag_occurrences"], 5)
+        self.assertEqual(stats["tag_distribution"], stats["top_tags"])
+
+    @patch("main.datetime")
+    def test_monthly_report_returns_summary_and_calendar_without_schema_change(self, mock_datetime):
+        mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 0)
+        main.set_favorite(1, main.FavoriteInput(is_favorite=True))
+
+        report = main.get_monthly_report(year=2026, month=7)
+
+        self.assertEqual(report["note_count"], 3)
+        self.assertEqual(report["learning_days"], 1)
+        self.assertEqual(report["new_tag_count"], 4)
+        self.assertEqual(report["favorite_count"], 1)
+        self.assertEqual(report["calendar"]["active_dates"], ["2026-07-05"])
+        self.assertTrue(report["ai_summary"])
+        self.assertTrue(report["recommended_actions"])
 
     @patch("main.build_weekly_report")
     @patch("main.datetime")
