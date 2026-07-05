@@ -85,6 +85,37 @@ class TagFilterTests(unittest.TestCase):
         self.assertEqual(stats["top_tags"][0], {"tag": "AI", "count": 2})
         self.assertEqual(len(stats["top_tags"]), 4)
 
+    @patch("main.build_weekly_report")
+    @patch("main.datetime")
+    def test_weekly_report_uses_only_today_and_previous_six_days(
+        self, mock_datetime, build_report
+    ):
+        mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 0)
+        connection = sqlite3.connect(self.database_path)
+        connection.executemany(
+            "INSERT INTO notes (raw_text, ai_summary, created_at) VALUES (?, ?, ?)",
+            [
+                ("Within week", "Summary #Weekly", "2026-06-29 09:00:00"),
+                ("Too old", "Summary #Old", "2026-06-28 23:59:59"),
+                ("Future", "Summary #Future", "2026-07-06 00:00:00"),
+            ],
+        )
+        connection.commit()
+        connection.close()
+        build_report.return_value = {
+            "learned_contents": [], "frequent_tags": [], "ai_summary": "Summary",
+            "next_week_suggestions": [], "provider": "mock",
+        }
+
+        report = main.get_weekly_report()
+
+        self.assertEqual(report["period"], {"start": "2026-06-29", "end": "2026-07-05"})
+        self.assertEqual(report["note_count"], 4)
+        passed_notes = build_report.call_args.args[0]
+        self.assertIn("Within week", [note["raw_text"] for note in passed_notes])
+        self.assertNotIn("Too old", [note["raw_text"] for note in passed_notes])
+        self.assertNotIn("Future", [note["raw_text"] for note in passed_notes])
+
     @patch("main.analyze_note_with_tags")
     def test_update_note_reanalyzes_and_saves_text(self, analyze):
         analyze.return_value = {"summary": "Updated #New", "tags": ["New"]}

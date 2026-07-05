@@ -1,6 +1,6 @@
 import sqlite3
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse, Response
@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from ai_client import analyze_note_with_tags, extract_tags
 from services.export_service import build_markdown
+from services.weekly_report_service import build_weekly_report
 
 load_dotenv()
 
@@ -201,6 +202,34 @@ def get_stats():
             {"tag": tag, "count": count}
             for tag, count in top_tags
         ],
+    }
+
+
+@app.get("/api/report/weekly")
+def get_weekly_report():
+    today = datetime.now().date()
+    start_date = today - timedelta(days=6)
+    conn = sqlite3.connect(DB)
+    rows = conn.execute(
+        """
+        SELECT raw_text, ai_summary, created_at
+        FROM notes
+        WHERE substr(created_at, 1, 10) BETWEEN ? AND ?
+        ORDER BY created_at DESC, id DESC
+        """,
+        (start_date.isoformat(), today.isoformat()),
+    ).fetchall()
+    conn.close()
+
+    notes = [
+        {"raw_text": row[0], "ai_summary": row[1], "created_at": row[2]}
+        for row in rows
+    ]
+    report = build_weekly_report(notes)
+    return {
+        "period": {"start": start_date.isoformat(), "end": today.isoformat()},
+        "note_count": len(notes),
+        **report,
     }
 
 

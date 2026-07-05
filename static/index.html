@@ -355,6 +355,18 @@
     .timeline-time { color: #64748b; font-size: 13px; margin-bottom: 5px; }
     .timeline-note-text { line-height: 1.7; white-space: pre-wrap; }
 
+    .weekly-report-button { margin: 0 0 20px; }
+    .weekly-report-card { display: none; margin-bottom: 30px; }
+    .weekly-report-card.active { display: block; }
+    .weekly-report-header { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; margin-bottom: 18px; }
+    .weekly-report-title { color: #1e40af; font-size: 22px; font-weight: 800; }
+    .weekly-report-period { color: #64748b; font-size: 13px; }
+    .weekly-report-section { padding: 16px 0; border-top: 1px solid #e2e8f0; }
+    .weekly-report-section h3 { margin: 0 0 10px; color: #334155; font-size: 16px; }
+    .weekly-report-section ul { margin: 0; padding-left: 22px; line-height: 1.8; }
+    .weekly-report-summary { margin: 0; line-height: 1.8; white-space: pre-wrap; }
+    .weekly-report-meta { margin-top: 14px; color: #94a3b8; font-size: 12px; }
+
     @media (max-width: 600px) {
       .logo { font-size: 34px; }
       .container { padding-top: 32px; }
@@ -404,6 +416,9 @@
       <div class="top-tags-label">よく使われているタグ Top 5</div>
       <div id="topTags"><span class="top-tags-empty">集計中...</span></div>
     </div>
+
+    <button type="button" class="weekly-report-button" id="weeklyReportButton" onclick="loadWeeklyReport()">Weekly Report</button>
+    <section class="panel weekly-report-card" id="weeklyReportCard" aria-live="polite"></section>
 
     <div class="search-box">
       <input
@@ -570,6 +585,44 @@
           #${escapeHtml(item.tag)}<span class="top-tag-count">${item.count}</span>
         </button>
       `).join("");
+    }
+
+    async function loadWeeklyReport() {
+      const button = document.getElementById("weeklyReportButton");
+      const card = document.getElementById("weeklyReportCard");
+      button.disabled = true;
+      card.classList.add("active");
+      card.innerHTML = '<div class="empty">Weekly Report を生成中...</div>';
+
+      try {
+        const response = await fetch("/api/report/weekly");
+        if (!response.ok) throw new Error("Weekly report failed");
+        const report = await response.json();
+        const learned = report.learned_contents.length
+          ? report.learned_contents.map(item => `<li>${escapeHtml(item)}</li>`).join("")
+          : "<li>今週の学習記録はまだありません。</li>";
+        const tags = report.frequent_tags.length
+          ? report.frequent_tags.map(item => `<span class="tag">#${escapeHtml(item.tag)} <span class="top-tag-count">${item.count}</span></span>`).join("")
+          : '<span class="top-tags-empty">タグはまだありません</span>';
+        const suggestions = report.next_week_suggestions
+          .map(item => `<li>${escapeHtml(item)}</li>`).join("");
+
+        card.innerHTML = `
+          <div class="weekly-report-header">
+            <div class="weekly-report-title">Weekly Report</div>
+            <div class="weekly-report-period">${escapeHtml(report.period.start)} 〜 ${escapeHtml(report.period.end)}</div>
+          </div>
+          <div class="weekly-report-section"><h3>今週学習した内容</h3><ul>${learned}</ul></div>
+          <div class="weekly-report-section"><h3>頻出タグ</h3><div>${tags}</div></div>
+          <div class="weekly-report-section"><h3>AIによる総括</h3><p class="weekly-report-summary">${escapeHtml(report.ai_summary)}</p></div>
+          <div class="weekly-report-section"><h3>来週の学習提案</h3><ul>${suggestions}</ul></div>
+          <div class="weekly-report-meta">${report.note_count}件の記録を集計 / ${escapeHtml(report.provider)}</div>
+        `;
+      } catch (error) {
+        card.innerHTML = '<div class="empty">Weekly Report の生成に失敗しました。</div>';
+      } finally {
+        button.disabled = false;
+      }
     }
 
     async function loadNotes() {
