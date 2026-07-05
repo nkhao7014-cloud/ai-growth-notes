@@ -3,12 +3,13 @@ from collections import Counter
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
 from ai_client import analyze_note_with_tags, extract_tags
+from services.export_service import build_markdown
 
 load_dotenv()
 
@@ -241,6 +242,54 @@ def search_notes(q: str = "", tag: str = ""):
     conn.close()
 
     return filter_notes_by_tag(format_notes(rows), tag)
+
+
+@app.get("/api/timeline")
+def get_timeline():
+    conn = sqlite3.connect(DB)
+    rows = conn.execute(
+        """
+        SELECT id, raw_text, ai_summary, created_at, is_favorite
+        FROM notes
+        ORDER BY created_at DESC, id DESC
+        """
+    ).fetchall()
+    conn.close()
+
+    today = datetime.now().strftime("%Y-%m-%d")
+    groups = []
+    for note in format_notes(rows):
+        date = (note["created_at"] or "")[:10] or "日付なし"
+        if not groups or groups[-1]["date"] != date:
+            groups.append({
+                "date": date,
+                "label": "Today" if date == today else date,
+                "notes": [],
+            })
+        groups[-1]["notes"].append(note)
+
+    return groups
+
+
+@app.get("/api/export/markdown")
+def export_markdown():
+    conn = sqlite3.connect(DB)
+    rows = conn.execute(
+        """
+        SELECT id, raw_text, ai_summary, created_at, is_favorite
+        FROM notes
+        ORDER BY created_at DESC, id DESC
+        """
+    ).fetchall()
+    conn.close()
+
+    content = build_markdown(format_notes(rows))
+    filename = f"ai-growth-notes-{datetime.now().strftime('%Y%m%d-%H%M%S')}.md"
+    return Response(
+        content=content.encode("utf-8"),
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 def format_notes(rows):

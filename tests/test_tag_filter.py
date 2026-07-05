@@ -55,6 +55,24 @@ class TagFilterTests(unittest.TestCase):
         self.assertEqual(len(main.list_notes(tag="")), 3)
 
     @patch("main.datetime")
+    def test_timeline_groups_notes_by_date_and_labels_today(self, mock_datetime):
+        mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 0)
+        connection = sqlite3.connect(self.database_path)
+        connection.execute(
+            "INSERT INTO notes (raw_text, ai_summary, created_at) VALUES (?, ?, ?)",
+            ("Yesterday note", "Summary", "2026-07-04 18:00:00"),
+        )
+        connection.commit()
+        connection.close()
+
+        timeline = main.get_timeline()
+
+        self.assertEqual([group["date"] for group in timeline], ["2026-07-05", "2026-07-04"])
+        self.assertEqual(timeline[0]["label"], "Today")
+        self.assertEqual(len(timeline[0]["notes"]), 3)
+        self.assertEqual(timeline[1]["label"], "2026-07-04")
+
+    @patch("main.datetime")
     def test_stats_returns_note_and_tag_counts(self, mock_datetime):
         mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 0)
 
@@ -94,6 +112,24 @@ class TagFilterTests(unittest.TestCase):
 
         self.assertTrue(result["deleted"])
         self.assertEqual(len(main.list_notes()), 2)
+
+    @patch("main.datetime")
+    def test_markdown_export_is_downloadable_and_sorted_by_created_at(self, mock_datetime):
+        mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 30)
+        main.set_favorite(1, main.FavoriteInput(is_favorite=True))
+
+        response = main.export_markdown()
+        markdown = response.body.decode("utf-8")
+
+        self.assertEqual(response.media_type, "text/markdown")
+        self.assertIn("attachment; filename=", response.headers["content-disposition"])
+        self.assertLess(markdown.index("## AI prompt practice"), markdown.index("## Practiced Python"))
+        self.assertLess(markdown.index("## Practiced Python"), markdown.index("## Learned FastAPI"))
+        self.assertIn("- 作成日時: 2026-07-05 10:00:00", markdown)
+        self.assertIn("- タグ: #AI #FastAPI", markdown)
+        self.assertIn("- お気に入り: はい", markdown)
+        self.assertIn("### 原文\n\nLearned FastAPI", markdown)
+        self.assertIn("### AI整理結果\n\nSummary #AI #FastAPI", markdown)
 
 
 if __name__ == "__main__":

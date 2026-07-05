@@ -52,6 +52,22 @@
       margin-bottom: 24px;
     }
 
+    .view-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      padding: 6px;
+      background: rgba(255,255,255,0.9);
+      border: 1px solid #dbeafe;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.06);
+    }
+
+    .view-tab { margin: 0; padding: 12px 18px; background: transparent; color: #64748b; box-shadow: none; }
+    .view-tab.active { background: linear-gradient(135deg, #2563eb, #4f46e5); color: #ffffff; box-shadow: 0 8px 20px rgba(37, 99, 235, 0.20); }
+    .export-button { width: auto; margin: 0 0 24px; padding: 12px 18px; }
+    .view[hidden] { display: none; }
+
     .dashboard {
       margin-bottom: 30px;
     }
@@ -323,6 +339,22 @@
       border: 1px dashed #cbd5e1;
     }
 
+    .timeline-heading { font-size: 24px; font-weight: 800; color: #1e40af; margin-bottom: 8px; }
+    .timeline-description { color: #64748b; margin-bottom: 22px; }
+    .timeline-group { margin-bottom: 16px; overflow: hidden; background: #ffffff; border: 1px solid #dbeafe; border-radius: 18px; }
+    .timeline-date { display: flex; align-items: center; justify-content: space-between; width: 100%; margin: 0; padding: 17px 20px; border-radius: 0; background: #eff6ff; color: #1e40af; box-shadow: none; text-align: left; }
+    .timeline-date:hover { transform: none; box-shadow: none; background: #dbeafe; }
+    .timeline-count { color: #64748b; font-size: 13px; }
+    .timeline-chevron { display: inline-block; transition: transform 0.2s; }
+    .timeline-group.collapsed .timeline-chevron { transform: rotate(-90deg); }
+    .timeline-group.collapsed .timeline-items { display: none; }
+    .timeline-items { padding: 4px 20px; }
+    .timeline-item { position: relative; padding: 18px 0 18px 22px; border-bottom: 1px solid #e2e8f0; }
+    .timeline-item:last-child { border-bottom: none; }
+    .timeline-item::before { content: ""; position: absolute; left: 0; top: 26px; width: 9px; height: 9px; border-radius: 50%; background: #2563eb; box-shadow: 0 0 0 4px #dbeafe; }
+    .timeline-time { color: #64748b; font-size: 13px; margin-bottom: 5px; }
+    .timeline-note-text { line-height: 1.7; white-space: pre-wrap; }
+
     @media (max-width: 600px) {
       .logo { font-size: 34px; }
       .container { padding-top: 32px; }
@@ -339,6 +371,15 @@
       <div class="subtitle">毎日の小さな成長を記録し、未来の一冊へ</div>
       <div class="date" id="todayDate"></div>
     </div>
+
+    <div class="view-tabs" role="tablist" aria-label="表示切替">
+      <button type="button" class="view-tab active" id="dashboardTab" role="tab" aria-selected="true" onclick="showView('dashboard')">Dashboard</button>
+      <button type="button" class="view-tab" id="timelineTab" role="tab" aria-selected="false" onclick="showView('timeline')">Timeline</button>
+    </div>
+
+    <button type="button" class="export-button" onclick="exportMarkdown()">Markdown Export</button>
+
+    <main class="view" id="dashboardView">
 
     <div class="panel dashboard">
       <div class="dashboard-title">成長ダッシュボード</div>
@@ -389,10 +430,89 @@
 
     <div class="notes-title">📖 私の成長記録</div>
     <div id="notesList"></div>
+    </main>
+
+    <section class="view panel" id="timelineView" hidden>
+      <div class="timeline-heading">Timeline</div>
+      <div class="timeline-description">日々の成長記録を時系列で振り返ります。</div>
+      <div id="timelineList"></div>
+    </section>
   </div>
 
   <script>
     let currentTag = "";
+    let timelineLoaded = false;
+
+    async function exportMarkdown() {
+      const button = document.querySelector(".export-button");
+      button.disabled = true;
+      try {
+        const response = await fetch("/api/export/markdown");
+        if (!response.ok) throw new Error("Export failed");
+        const disposition = response.headers.get("Content-Disposition") || "";
+        const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1] || "ai-growth-notes.md";
+        const url = URL.createObjectURL(await response.blob());
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+      } catch (error) {
+        alert("Markdown のエクスポートに失敗しました。");
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    function showView(view) {
+      const isTimeline = view === "timeline";
+      document.getElementById("dashboardView").hidden = isTimeline;
+      document.getElementById("timelineView").hidden = !isTimeline;
+      document.getElementById("dashboardTab").classList.toggle("active", !isTimeline);
+      document.getElementById("timelineTab").classList.toggle("active", isTimeline);
+      document.getElementById("dashboardTab").setAttribute("aria-selected", String(!isTimeline));
+      document.getElementById("timelineTab").setAttribute("aria-selected", String(isTimeline));
+      if (isTimeline && !timelineLoaded) loadTimeline();
+    }
+
+    async function loadTimeline() {
+      const list = document.getElementById("timelineList");
+      list.innerHTML = '<div class="empty">読み込み中...</div>';
+      const res = await fetch("/api/timeline");
+      if (!res.ok) {
+        list.innerHTML = '<div class="empty">Timeline の読み込みに失敗しました。</div>';
+        return;
+      }
+      const groups = await res.json();
+      timelineLoaded = true;
+      if (groups.length === 0) {
+        list.innerHTML = '<div class="empty">まだ成長記録がありません。</div>';
+        return;
+      }
+      list.innerHTML = groups.map(group => `
+        <section class="timeline-group">
+          <button type="button" class="timeline-date" aria-expanded="true">
+            <span>${escapeHtml(group.label)}</span>
+            <span><span class="timeline-count">${group.notes.length}件</span> <span class="timeline-chevron">▼</span></span>
+          </button>
+          <div class="timeline-items">
+            ${group.notes.map(note => `
+              <article class="timeline-item">
+                <div class="timeline-time">${escapeHtml(formatTimelineTime(note.created_at))}</div>
+                <div class="timeline-note-text">${escapeHtml(note.raw_text)}</div>
+              </article>
+            `).join("")}
+          </div>
+        </section>
+      `).join("");
+    }
+
+    function formatTimelineTime(createdAt) {
+      const parts = String(createdAt || "").split(" ");
+      return parts.length > 1 ? parts[1].slice(0, 5) : "";
+    }
     function setTodayDate() {
       const now = new Date();
       const weekdays = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
@@ -426,6 +546,7 @@
       currentTag = "";
       updateFilterDisplay();
       await Promise.all([loadNotes(), loadStats()]);
+      timelineLoaded = false;
     }
 
     async function loadStats() {
@@ -592,6 +713,7 @@
       });
       if (!res.ok) return alert("ノートの更新に失敗しました。");
       await Promise.all([searchNotes(), loadStats()]);
+      timelineLoaded = false;
     }
 
     async function deleteNote(card) {
@@ -599,6 +721,7 @@
       const res = await fetch(`/api/notes/${card.dataset.noteId}`, { method: "DELETE" });
       if (!res.ok) return alert("ノートの削除に失敗しました。");
       await Promise.all([searchNotes(), loadStats()]);
+      timelineLoaded = false;
     }
 
     document.getElementById("notesList").addEventListener("click", event => {
@@ -617,6 +740,14 @@
     document.getElementById("topTags").addEventListener("click", event => {
       const tagButton = event.target.closest("button.tag[data-tag]");
       if (tagButton) selectTag(tagButton.dataset.tag);
+    });
+
+    document.getElementById("timelineList").addEventListener("click", event => {
+      const button = event.target.closest(".timeline-date");
+      if (!button) return;
+      const group = button.closest(".timeline-group");
+      const collapsed = group.classList.toggle("collapsed");
+      button.setAttribute("aria-expanded", String(!collapsed));
     });
 
     setTodayDate();
