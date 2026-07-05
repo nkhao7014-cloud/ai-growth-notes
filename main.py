@@ -2,7 +2,7 @@ import sqlite3
 from collections import Counter
 from datetime import datetime
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -30,6 +30,10 @@ def init_db():
     )
     """)
 
+    columns = {row[1] for row in cur.execute("PRAGMA table_info(notes)")}
+    if "is_favorite" not in columns:
+        cur.execute("ALTER TABLE notes ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
+
     conn.commit()
     conn.close()
 
@@ -39,6 +43,10 @@ init_db()
 
 class NoteInput(BaseModel):
     text: str
+
+
+class FavoriteInput(BaseModel):
+    is_favorite: bool
 
 
 @app.post("/api/notes")
@@ -79,6 +87,56 @@ def create_note(note: NoteInput):
     }
 
 
+@app.put("/api/notes/{note_id}")
+def update_note(note_id: int, note: NoteInput):
+    text = note.text.strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="Note text must not be empty")
+
+    conn = sqlite3.connect(DB)
+    if not conn.execute("SELECT 1 FROM notes WHERE id = ?", (note_id,)).fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Note not found")
+    conn.close()
+
+    result = analyze_note_with_tags(text)
+    conn = sqlite3.connect(DB)
+    conn.execute(
+        "UPDATE notes SET raw_text = ?, ai_summary = ? WHERE id = ?",
+        (text, result["summary"], note_id),
+    )
+    conn.commit()
+    conn.close()
+    return {"id": note_id, "summary": result["summary"], "tags": result["tags"]}
+
+
+@app.delete("/api/notes/{note_id}")
+def delete_note(note_id: int):
+    conn = sqlite3.connect(DB)
+    cursor = conn.execute("DELETE FROM notes WHERE id = ?", (note_id,))
+    conn.commit()
+    deleted = cursor.rowcount
+    conn.close()
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return {"deleted": True, "id": note_id}
+
+
+@app.patch("/api/notes/{note_id}/favorite")
+def set_favorite(note_id: int, favorite: FavoriteInput):
+    conn = sqlite3.connect(DB)
+    cursor = conn.execute(
+        "UPDATE notes SET is_favorite = ? WHERE id = ?",
+        (int(favorite.is_favorite), note_id),
+    )
+    conn.commit()
+    updated = cursor.rowcount
+    conn.close()
+    if not updated:
+        raise HTTPException(status_code=404, detail="Note not found")
+    return {"id": note_id, "is_favorite": favorite.is_favorite}
+
+
 @app.get("/api/notes")
 def list_notes(tag: str = ""):
     conn = sqlite3.connect(DB)
@@ -89,7 +147,8 @@ def list_notes(tag: str = ""):
             id,
             raw_text,
             ai_summary,
-            created_at
+            created_at,
+            is_favorite
         FROM notes
         ORDER BY id DESC
     """)
@@ -107,6 +166,9 @@ def get_stats():
 
     cur.execute("SELECT COUNT(*) FROM notes")
     total_notes = cur.fetchone()[0]
+
+    cur.execute("SELECT COUNT(*) FROM notes WHERE is_favorite = 1")
+    favorite_notes = cur.fetchone()[0]
 
     today = datetime.now().strftime("%Y-%m-%d")
     cur.execute(
@@ -132,6 +194,7 @@ def get_stats():
     return {
         "total_notes": total_notes,
         "today_notes": today_notes,
+        "favorite_notes": favorite_notes,
         "tag_count": len(tag_counts),
         "top_tags": [
             {"tag": tag, "count": count}
@@ -155,7 +218,8 @@ def search_notes(q: str = "", tag: str = ""):
                 id,
                 raw_text,
                 ai_summary,
-                created_at
+                created_at,
+                is_favorite
             FROM notes
             WHERE raw_text LIKE ?
                OR ai_summary LIKE ?
@@ -167,7 +231,8 @@ def search_notes(q: str = "", tag: str = ""):
                 id,
                 raw_text,
                 ai_summary,
-                created_at
+                created_at,
+                is_favorite
             FROM notes
             ORDER BY id DESC
         """)
@@ -185,7 +250,8 @@ def format_notes(rows):
             "raw_text": row[1],
             "ai_summary": row[2],
             "tags": extract_tags(row[2]),
-            "created_at": row[3]
+            "created_at": row[3],
+            "is_favorite": bool(row[4])
         }
         for row in rows
     ]

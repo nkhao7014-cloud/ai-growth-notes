@@ -17,7 +17,8 @@ class TagFilterTests(unittest.TestCase):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 raw_text TEXT,
                 ai_summary TEXT,
-                created_at TEXT
+                created_at TEXT,
+                is_favorite INTEGER NOT NULL DEFAULT 0
             )"""
         )
         connection.executemany(
@@ -61,9 +62,38 @@ class TagFilterTests(unittest.TestCase):
 
         self.assertEqual(stats["total_notes"], 3)
         self.assertEqual(stats["today_notes"], 3)
+        self.assertEqual(stats["favorite_notes"], 0)
         self.assertEqual(stats["tag_count"], 4)
         self.assertEqual(stats["top_tags"][0], {"tag": "AI", "count": 2})
         self.assertEqual(len(stats["top_tags"]), 4)
+
+    @patch("main.analyze_note_with_tags")
+    def test_update_note_reanalyzes_and_saves_text(self, analyze):
+        analyze.return_value = {"summary": "Updated #New", "tags": ["New"]}
+
+        result = main.update_note(1, main.NoteInput(text="Updated text"))
+
+        self.assertEqual(result["summary"], "Updated #New")
+        analyze.assert_called_once_with("Updated text")
+        connection = sqlite3.connect(self.database_path)
+        row = connection.execute(
+            "SELECT raw_text, ai_summary FROM notes WHERE id = 1"
+        ).fetchone()
+        connection.close()
+        self.assertEqual(row, ("Updated text", "Updated #New"))
+
+    def test_favorite_toggle_updates_note_and_stats(self):
+        result = main.set_favorite(1, main.FavoriteInput(is_favorite=True))
+
+        self.assertTrue(result["is_favorite"])
+        self.assertTrue(main.list_notes()[2]["is_favorite"])
+        self.assertEqual(main.get_stats()["favorite_notes"], 1)
+
+    def test_delete_note_removes_it(self):
+        result = main.delete_note(2)
+
+        self.assertTrue(result["deleted"])
+        self.assertEqual(len(main.list_notes()), 2)
 
 
 if __name__ == "__main__":

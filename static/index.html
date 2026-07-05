@@ -65,7 +65,7 @@
 
     .stats-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(4, 1fr);
       gap: 14px;
       margin-bottom: 16px;
     }
@@ -279,6 +279,34 @@
       font-weight: 700;
     }
 
+    .note-header, .note-actions {
+      display: flex;
+      align-items: center;
+    }
+
+    .note-header { justify-content: space-between; gap: 12px; }
+    .note-actions { gap: 8px; }
+
+    .note-action {
+      width: auto;
+      margin: 0;
+      padding: 8px 12px;
+      border: 1px solid #dbeafe;
+      border-radius: 12px;
+      background: #f8fafc;
+      color: #475569;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .favorite-button { font-size: 20px; padding: 5px 10px; color: #94a3b8; }
+    .favorite-button.active { color: #f59e0b; background: #fffbeb; border-color: #fde68a; }
+    .delete-button { color: #dc2626; background: #fff7f7; border-color: #fecaca; }
+    .edit-area { min-height: 130px; margin-top: 12px; }
+    .edit-actions { display: flex; gap: 10px; }
+    .edit-actions button { margin-top: 10px; }
+    .cancel-button { background: #64748b; }
+
     button.tag:hover,
     button.tag.active {
       background: #2563eb;
@@ -326,6 +354,10 @@
         <div class="stat-card">
           <div class="stat-value" id="tagCount">-</div>
           <div class="stat-label">タグ数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="favoriteNotes">-</div>
+          <div class="stat-label">お気に入り</div>
         </div>
       </div>
       <div class="top-tags-label">よく使われているタグ Top 5</div>
@@ -404,6 +436,7 @@
       document.getElementById("totalNotes").textContent = stats.total_notes;
       document.getElementById("todayNotes").textContent = stats.today_notes;
       document.getElementById("tagCount").textContent = stats.tag_count;
+      document.getElementById("favoriteNotes").textContent = stats.favorite_notes;
 
       const topTags = document.getElementById("topTags");
       if (stats.top_tags.length === 0) {
@@ -486,8 +519,16 @@
             `).join("")
           : `<span class="tag">#未分類</span>`;
 
+        card.dataset.noteId = note.id;
         card.innerHTML = `
-          <div class="note-date">📅 ${note.created_at}</div>
+          <div class="note-header">
+            <div class="note-date">📅 ${note.created_at}</div>
+            <div class="note-actions">
+              <button type="button" class="note-action favorite-button${note.is_favorite ? " active" : ""}" data-action="favorite" aria-label="お気に入りを切り替え">★</button>
+              <button type="button" class="note-action" data-action="edit">編集</button>
+              <button type="button" class="note-action delete-button" data-action="delete">削除</button>
+            </div>
+          </div>
 
           <div class="section-label">📝 元のノート</div>
           <div class="raw">${escapeHtml(note.raw_text)}</div>
@@ -512,7 +553,63 @@
         .replaceAll("'", "&#039;");
     }
 
+    async function toggleFavorite(card) {
+      const button = card.querySelector('[data-action="favorite"]');
+      const isFavorite = !button.classList.contains("active");
+      const res = await fetch(`/api/notes/${card.dataset.noteId}/favorite`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ is_favorite: isFavorite })
+      });
+      if (!res.ok) return alert("お気に入りの更新に失敗しました。");
+      button.classList.toggle("active", isFavorite);
+      await loadStats();
+    }
+
+    function startEdit(card) {
+      if (card.querySelector(".edit-area")) return;
+      const raw = card.querySelector(".raw");
+      raw.hidden = true;
+      raw.insertAdjacentHTML("afterend", `
+        <textarea class="edit-area">${escapeHtml(raw.textContent)}</textarea>
+        <div class="edit-actions">
+          <button type="button" data-action="save-edit">保存してAI整理を再実行</button>
+          <button type="button" class="cancel-button" data-action="cancel-edit">キャンセル</button>
+        </div>`);
+    }
+
+    function cancelEdit(card) {
+      card.querySelector(".raw").hidden = false;
+      card.querySelector(".edit-area")?.remove();
+      card.querySelector(".edit-actions")?.remove();
+    }
+
+    async function saveEdit(card) {
+      const text = card.querySelector(".edit-area").value.trim();
+      if (!text) return alert("内容を入力してください。");
+      const res = await fetch(`/api/notes/${card.dataset.noteId}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      if (!res.ok) return alert("ノートの更新に失敗しました。");
+      await Promise.all([searchNotes(), loadStats()]);
+    }
+
+    async function deleteNote(card) {
+      if (!confirm("このノートを削除しますか？この操作は取り消せません。")) return;
+      const res = await fetch(`/api/notes/${card.dataset.noteId}`, { method: "DELETE" });
+      if (!res.ok) return alert("ノートの削除に失敗しました。");
+      await Promise.all([searchNotes(), loadStats()]);
+    }
+
     document.getElementById("notesList").addEventListener("click", event => {
+      const actionButton = event.target.closest("button[data-action]");
+      if (actionButton) {
+        const card = actionButton.closest(".note-card");
+        const actions = { favorite: toggleFavorite, edit: startEdit,
+          "cancel-edit": cancelEdit, "save-edit": saveEdit, delete: deleteNote };
+        actions[actionButton.dataset.action]?.(card);
+        return;
+      }
       const tagButton = event.target.closest("button.tag[data-tag]");
       if (tagButton) selectTag(tagButton.dataset.tag);
     });
