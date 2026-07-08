@@ -279,6 +279,22 @@ def get_monthly_report(year: int | None = None, month: int | None = None):
     notes = format_notes(rows)
     active_dates = sorted({(note["created_at"] or "")[:10] for note in notes if note["created_at"]})
     tag_counts = Counter(tag for note in notes for tag in note["tags"])
+    top_tags = tag_counts.most_common(5)
+    learning_themes = [
+        f"#{tag} を中心にした学習"
+        for tag, _ in top_tags[:3]
+    ]
+    favorite_notes = [
+        {
+            "id": note["id"],
+            "text": note["raw_text"],
+            "created_at": note["created_at"],
+            "tags": note["tags"],
+        }
+        for note in notes
+        if note["is_favorite"]
+    ][:5]
+    continuous_days = calculate_continuous_days(active_dates)
     highlights = [
         {
             "id": note["id"],
@@ -307,11 +323,14 @@ def get_monthly_report(year: int | None = None, month: int | None = None):
         "period": {"year": report_year, "month": report_month, "start": start_date, "end": end_date},
         "note_count": len(notes),
         "learning_days": len(active_dates),
+        "continuous_days": continuous_days,
         "new_tag_count": len(tag_counts),
         "favorite_count": sum(1 for note in notes if note["is_favorite"]),
+        "learning_themes": learning_themes,
+        "favorite_notes": favorite_notes,
         "tag_analysis": [
             {"tag": tag, "count": count}
-            for tag, count in tag_counts.most_common(5)
+            for tag, count in top_tags
         ],
         "highlights": highlights,
         "ai_summary": ai_summary,
@@ -434,6 +453,76 @@ def export_markdown():
         media_type="text/markdown",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@app.get("/api/report/monthly/export")
+def export_monthly_report_markdown(year: int | None = None, month: int | None = None):
+    report = get_monthly_report(year=year, month=month)
+    content = build_monthly_report_markdown(report)
+    filename = (
+        f"ai-growth-monthly-report-"
+        f"{report['period']['year']:04d}{report['period']['month']:02d}.md"
+    )
+    return Response(
+        content=content.encode("utf-8"),
+        media_type="text/markdown",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def calculate_continuous_days(active_dates: list[str]) -> int:
+    if not active_dates:
+        return 0
+
+    date_set = {datetime.strptime(date, "%Y-%m-%d").date() for date in active_dates}
+    cursor = max(date_set)
+    days = 0
+    while cursor in date_set:
+        days += 1
+        cursor -= timedelta(days=1)
+    return days
+
+
+def build_monthly_report_markdown(report: dict) -> str:
+    period = report["period"]
+    lines = [
+        f"# AI Growth Notes Monthly Report {period['year']}年{period['month']}月",
+        "",
+        f"対象期間: {period['start']} - {period['end']}",
+        "",
+        "## 今月の総括",
+        "",
+        report.get("ai_summary") or "データがありません",
+        "",
+        "## 今月の学習テーマ",
+        "",
+        *markdown_list(report.get("learning_themes", [])),
+        "",
+        "## よく使われたタグ Top 5",
+        "",
+        *markdown_list([f"#{item['tag']}: {item['count']}件" for item in report.get("tag_analysis", [])]),
+        "",
+        "## お気に入りノート",
+        "",
+        *markdown_list([
+            f"{note.get('created_at', '')} {note.get('text', '')}"
+            for note in report.get("favorite_notes", [])
+        ]),
+        "",
+        "## 継続日数",
+        "",
+        f"{report.get('continuous_days', 0)}日",
+        "",
+        "## 来月へのおすすめアクション",
+        "",
+        *markdown_list(report.get("recommended_actions", [])),
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def markdown_list(items: list[str]) -> list[str]:
+    return [f"- {item}" for item in items] if items else ["- データがありません"]
 
 
 def format_notes(rows):

@@ -112,6 +112,10 @@ class TagFilterTests(unittest.TestCase):
         self.assertEqual(report["learning_days"], 1)
         self.assertEqual(report["new_tag_count"], 4)
         self.assertEqual(report["favorite_count"], 1)
+        self.assertEqual(report["continuous_days"], 1)
+        self.assertEqual(report["learning_themes"][0], "#AI を中心にした学習")
+        self.assertEqual(report["tag_analysis"][0], {"tag": "AI", "count": 2})
+        self.assertEqual(report["favorite_notes"][0]["text"], "Learned FastAPI")
         self.assertEqual(report["calendar"]["active_dates"], ["2026-07-05"])
         self.assertTrue(report["ai_summary"])
         self.assertTrue(report["recommended_actions"])
@@ -192,6 +196,24 @@ class TagFilterTests(unittest.TestCase):
         self.assertIn("- お気に入り: はい", markdown)
         self.assertIn("### 原文\n\nLearned FastAPI", markdown)
         self.assertIn("### AI整理結果\n\nSummary #AI #FastAPI", markdown)
+
+
+    @patch("main.datetime")
+    def test_monthly_report_markdown_export_is_downloadable(self, mock_datetime):
+        mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 30)
+        main.set_favorite(1, main.FavoriteInput(is_favorite=True))
+
+        response = main.export_monthly_report_markdown(year=2026, month=7)
+        markdown = response.body.decode("utf-8")
+
+        self.assertEqual(response.media_type, "text/markdown")
+        self.assertIn("ai-growth-monthly-report-202607.md", response.headers["content-disposition"])
+        self.assertIn("## 今月の総括", markdown)
+        self.assertIn("## 今月の学習テーマ", markdown)
+        self.assertIn("## よく使われたタグ Top 5", markdown)
+        self.assertIn("## お気に入りノート", markdown)
+        self.assertIn("## 継続日数", markdown)
+        self.assertIn("## 来月へのおすすめアクション", markdown)
 
 
 if __name__ == "__main__":
