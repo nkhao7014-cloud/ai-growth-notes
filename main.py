@@ -561,3 +561,9 @@ app.mount(
 @app.get("/")
 def home():
     return FileResponse("static/index.html")
+
+
+@app.get("/ai-daily")
+def ai_daily():
+    """Serve the SPA with AI Daily selected by its client-side router."""
+    return FileResponse("static/index.html")
