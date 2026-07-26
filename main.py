@@ -12,6 +12,9 @@ from dotenv import load_dotenv
 from ai_client import analyze_note_with_tags, extract_tags, normalize_tag, normalize_tags_in_text
 from services.export_service import build_markdown
 from services.weekly_report_service import build_weekly_report
+from routers.ai_daily import router as ai_daily_router
+import routers.ai_daily as ai_daily_routes
+from services.ai_daily_service import init_ai_daily_db
 
 load_dotenv()
 
@@ -39,9 +42,13 @@ def init_db():
 
     conn.commit()
     conn.close()
+    init_ai_daily_db(DB)
 
 
 init_db()
+
+ai_daily_routes.DB = DB
+app.include_router(ai_daily_router)
 
 
 class NoteInput(BaseModel):

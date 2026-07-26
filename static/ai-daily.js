@@ -4,87 +4,36 @@
   const bottomNav = document.querySelector(".bottom-nav");
   const dashboardSide = document.querySelector(".dashboard-side");
   const dailyView = document.getElementById("ai-dailyView");
+  let data = null, filter = "all", refreshing = false;
 
-  const topButton = document.createElement("button");
-  topButton.className = "tab nav-tab";
-  topButton.type = "button";
-  topButton.dataset.view = "ai-daily";
-  topButton.innerHTML = '<span class="tab-icon" aria-hidden="true">✦</span>AI Daily';
-  topNav.insertBefore(topButton, topNav.children[1]);
+  function navButton(className, label) { const b=document.createElement("button"); b.className=className; b.type="button"; b.dataset.view="ai-daily"; b.textContent=label; return b; }
+  const topButton=navButton("tab nav-tab","✦ AI Daily"); topNav.insertBefore(topButton,topNav.children[1]);
+  const bottomButton=navButton("bottom-nav-item","✦ AI Daily"); bottomNav.insertBefore(bottomButton,bottomNav.children[1]);
+  const entry=document.createElement("section"); entry.className="card app-card ai-daily-entry";
+  const eyebrow=document.createElement("div"); eyebrow.className="eyebrow"; eyebrow.textContent="Daily Briefing";
+  const entryTitle=document.createElement("h3"); entryTitle.textContent="AI Daily";
+  const entryText=document.createElement("p"); entryText.textContent="今日のAI公式情報を確認する";
+  const entryButton=document.createElement("button"); entryButton.className="primary action-button"; entryButton.type="button"; entryButton.textContent="Open AI Daily";
+  entry.append(eyebrow,entryTitle,entryText,entryButton); dashboardSide.appendChild(entry);
 
-  const bottomButton = document.createElement("button");
-  bottomButton.className = "bottom-nav-item";
-  bottomButton.type = "button";
-  bottomButton.dataset.view = "ai-daily";
-  bottomButton.innerHTML = '<span aria-hidden="true">✦</span>AI Daily';
-  bottomNav.insertBefore(bottomButton, bottomNav.children[1]);
-
-  const entry = document.createElement("section");
-  entry.className = "card app-card ai-daily-entry";
-  entry.innerHTML = '<div class="eyebrow">Daily Briefing</div><h3>AI Daily</h3><p>今日のAI学習情報を確認する</p><button class="primary action-button" type="button">Open AI Daily</button>';
-  dashboardSide.appendChild(entry);
-
-  function showView(name, updateHistory = true) {
-    baseSetView(name);
-    const path = name === "ai-daily" ? "/ai-daily" : "/";
-    if (updateHistory && location.pathname !== path) history.pushState({view: name}, "", path);
-    document.title = name === "ai-daily" ? "AI Daily | AI Growth Notes" : "AI Growth Notes";
-  }
-
-  document.querySelectorAll("[data-view]").forEach(button => {
-    button.onclick = () => showView(button.dataset.view);
-  });
-  entry.querySelector("button").onclick = () => showView("ai-daily");
-
-  function showToast(message) {
-    let toast = document.getElementById("aiDailyToast");
-    if (!toast) {
-      toast = document.createElement("div");
-      toast.id = "aiDailyToast";
-      toast.className = "ai-daily-toast";
-      toast.setAttribute("role", "status");
-      toast.setAttribute("aria-live", "polite");
-      document.body.appendChild(toast);
-    }
-    toast.textContent = message;
-    toast.classList.add("show");
-    clearTimeout(showToast.timer);
-    showToast.timer = setTimeout(() => toast.classList.remove("show"), 2400);
-  }
-
-  async function loadDaily() {
-    try {
-      const response = await fetch("/static/ai-daily-content.html");
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      dailyView.innerHTML = await response.text();
-      const now = new Date();
-      const formatter = new Intl.DateTimeFormat("ja-JP", {year:"numeric", month:"long", day:"numeric", weekday:"short"});
-      document.getElementById("aiDailyDate").textContent = formatter.format(now);
-      const updated = document.getElementById("aiDailyUpdated");
-      updated.dateTime = now.toISOString();
-      updated.textContent = `最終更新 ${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-      document.getElementById("aiDailyRefresh").onclick = event => {
-        const button = event.currentTarget;
-        button.disabled = true;
-        button.classList.add("is-loading");
-        button.textContent = "更新中…";
-        setTimeout(() => {
-          button.disabled = false;
-          button.classList.remove("is-loading");
-          button.textContent = "更新する";
-          showToast("Sprint 1ではダミーデータを表示しています");
-        }, 800);
-      };
-      dailyView.querySelectorAll("[data-demo-action]").forEach(button => {
-        button.onclick = () => showToast("この機能はSprint 2以降で実装予定です");
-      });
-    } catch (error) {
-      dailyView.innerHTML = `<section class="card app-card"><h2>AI Daily</h2><p>画面を読み込めませんでした: ${error.message}</p></section>`;
-    }
-  }
-
-  loadDaily().then(() => {
-    if (location.pathname === "/ai-daily") showView("ai-daily", false);
-  });
-  window.addEventListener("popstate", () => showView(location.pathname === "/ai-daily" ? "ai-daily" : "dashboard", false));
+  function showView(name,history=true){baseSetView(name);const path=name==="ai-daily"?"/ai-daily":"/";if(history&&location.pathname!==path)window.history.pushState({view:name},"",path);document.title=name==="ai-daily"?"AI Daily | AI Growth Notes":"AI Growth Notes"}
+  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>showView(b.dataset.view)); entryButton.onclick=()=>showView("ai-daily");
+  const el=id=>document.getElementById(id);
+  function toast(message,error=false){let node=el("aiDailyToast");if(!node){node=document.createElement("div");node.id="aiDailyToast";node.className="ai-daily-toast";node.setAttribute("role","status");document.body.appendChild(node)}node.textContent=message;node.classList.toggle("error",error);node.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>node.classList.remove("show"),2800)}
+  async function request(url,options={}){const response=await fetch(url,options);let body={};try{body=await response.json()}catch{}if(!response.ok)throw new Error(body.detail||"request_failed");return body}
+  function node(tag,className,text){const n=document.createElement(tag);if(className)n.className=className;if(text!==undefined)n.textContent=text;return n}
+  function formatDate(value,withTime=false){if(!value)return "不明";const d=new Date(value);if(Number.isNaN(d.valueOf()))return value.slice(0,16);return new Intl.DateTimeFormat("ja-JP",withTime?{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}:{year:"numeric",month:"long",day:"numeric"}).format(d)}
+  function externalLink(item,label="元記事を開く"){const a=node("a","primary action-button",label);a.href=item.source_url;a.target="_blank";a.rel="noopener noreferrer";return a}
+  function actionButton(label,action,item,active=false){const b=node("button","action action-button"+(active?" active":""),label);b.type="button";b.dataset.action=action;b.dataset.id=item.id;return b}
+  function itemActions(item){const box=node("div","ai-news-actions");box.append(externalLink(item),actionButton(item.is_read?"既読":"未読","read",item,item.is_read),actionButton(item.is_favorite?"★ お気に入り":"☆ お気に入り","favorite",item,item.is_favorite),actionButton(item.saved_note_id?"Notes保存済み":"Notesへ保存","save-note",item,!!item.saved_note_id));return box}
+  function renderHighlights(items){const root=el("aiHighlights");root.replaceChildren();el("aiHighlightCount").textContent=`${items.length}件`;items.forEach(item=>{const card=node("article","ai-news-card"+(item.is_read?" is-read":""));const top=node("div","ai-news-top");top.append(node("span","ai-category",item.category),node("time","note-date",formatDate(item.published_at,true)));card.append(top,node("h3","",item.title));const source=node("div","ai-news-source");source.append(node("strong","",item.source_name),node("span","",formatDate(item.published_at)));card.append(source,node("p","ai-news-summary",item.summary));const why=node("p","ai-news-why");why.append(node("strong","","重要な理由："),document.createTextNode(item.why_it_matters));card.append(why);const tags=node("div","tags");(item.tags||[]).forEach(tag=>tags.append(node("span","tag-badge",`#${tag}`)));card.append(tags,itemActions(item));root.append(card)})}
+  function renderFocus(){const learning=el("aiLearning"),practice=el("aiPractice");learning.replaceChildren();practice.replaceChildren();const l=data.learning,p=data.practice;if(l){learning.append(node("div","eyebrow",`${l.minutes} min Learning`),node("h2","","Today's Learning"),node("h3","",l.topic),node("p","",l.reason));const ul=node("ul");l.points.forEach(x=>ul.append(node("li","",x)));learning.append(ul,node("p","ai-growth-relation",l.growth_notes_relation))}if(p){practice.append(node("div","eyebrow",`${p.minutes} min Practice`),node("h2","","Today's Practice"),node("h3","",p.title),node("p","",p.description))}}
+  function filteredItems(){const items=data?.reading_list||[];return filter==="unread"?items.filter(x=>!x.is_read):filter==="favorite"?items.filter(x=>x.is_favorite):items}
+  function renderReading(){const root=el("aiReadingList"),items=filteredItems();root.replaceChildren();el("aiReadingCount").textContent=`${items.length}件`;if(!items.length){root.append(node("p","empty","該当する記事はありません。"));return}items.forEach(item=>{const row=node("article","ai-reading-item"+(item.is_read?" is-read":""));const body=node("div","ai-reading-body");body.append(node("span","ai-category",item.category),node("h3","",item.title),node("p","reading-source",`${item.source_name}・${formatDate(item.published_at,true)}`));row.append(body,itemActions(item));root.append(row)})}
+  function render(){el("aiDailyLoading").hidden=true;el("aiDailyError").hidden=true;const empty=!data?.reading_list?.length;el("aiDailyEmpty").hidden=!empty;el("aiDailyContent").hidden=empty;el("aiDailyDate").textContent=formatDate(data?.date||new Date().toISOString());el("aiDailyUpdated").textContent=data?.last_updated_at?`最終更新 ${formatDate(data.last_updated_at,true)}`:"未更新";if(!empty){renderHighlights(data.highlights||[]);renderFocus();renderReading()}}
+  async function load(showLoading=true){if(showLoading)el("aiDailyLoading").hidden=false;try{data=await request("/api/ai-daily");render()}catch{el("aiDailyLoading").hidden=true;el("aiDailyContent").hidden=true;el("aiDailyEmpty").hidden=true;el("aiDailyError").hidden=false}}
+  async function refresh(){if(refreshing)return;refreshing=true;const button=el("aiDailyRefresh");button.disabled=true;button.textContent="更新中…";try{const result=await request("/api/ai-daily/refresh",{method:"POST"});await load(false);toast(`更新完了：新規${result.new_items}件、更新${result.updated_items}件${result.failed_feeds?`（${result.failed_feeds}件のFeed失敗）`:""}`)}catch{await load(false);toast(data?.reading_list?.length?"最新情報を取得できませんでした。保存済みの情報を表示しています。":"最新情報を取得できませんでした。",true)}finally{refreshing=false;button.disabled=false;button.textContent="更新する"}}
+  async function itemAction(button){const id=Number(button.dataset.id),action=button.dataset.action,item=data.reading_list.find(x=>x.id===id);if(!item)return;button.disabled=true;try{if(action==="read"){const result=await request(`/api/ai-daily/items/${id}/read`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({value:!item.is_read})});item.is_read=result.is_read;toast("既読状態を更新しました") }else if(action==="favorite"){const result=await request(`/api/ai-daily/items/${id}/favorite`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({value:!item.is_favorite})});item.is_favorite=result.is_favorite;toast("お気に入りを更新しました") }else{const result=await request(`/api/ai-daily/items/${id}/save-note`,{method:"POST"});item.saved_note_id=result.note_id;toast(result.already_saved?"すでにNotesへ保存済みです":"Notesへ保存しました")}data.highlights=(data.highlights||[]).map(x=>x.id===id?item:x);render()}catch{toast("操作を完了できませんでした",true)}finally{button.disabled=false}}
+  async function init(){try{const response=await fetch("/static/ai-daily-content.html");if(!response.ok)throw new Error();dailyView.innerHTML=await response.text();dailyView.addEventListener("click",e=>{const action=e.target.closest("[data-action]");if(action)itemAction(action);if(e.target.closest("[data-refresh]"))refresh();if(e.target.closest("[data-retry]"))load();const f=e.target.closest("[data-filter]");if(f){filter=f.dataset.filter;dailyView.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b===f));renderReading()}});el("aiDailyRefresh").onclick=refresh;await load();if(location.pathname==="/ai-daily")showView("ai-daily",false)}catch{dailyView.textContent="AI Dailyを読み込めませんでした。"}}
+  init();window.addEventListener("popstate",()=>showView(location.pathname==="/ai-daily"?"ai-daily":"dashboard",false));
 })();
