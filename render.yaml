@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: ai-growth-notes
+    runtime: python
+    plan: free
+    buildCommand: python -m pip install --upgrade pip && python -m pip install -r requirements.txt
+    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: APP_USERNAME
+        sync: false
+      - key: APP_PASSWORD_HASH
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: APP_ENV
+        value: production
+      - key: AI_PROVIDER
+        value: mock
+      - key: AI_MODEL
+        value: gemini-2.0-flash
+      - key: PYTHON_VERSION
+        value: 3.12.8
+      - key: SESSION_MAX_AGE
+        value: "604800"

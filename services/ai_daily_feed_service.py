@@ -71,6 +71,15 @@ def normalize_url(value: str | None, base_url: str | None = None) -> str | None:
         return None
 
 
+def normalized_url_or_fallback(source_url: str | None, fallback_value: str) -> str:
+    """Return a canonical web URL or a deterministic non-web deduplication URL."""
+    normalized = normalize_url(source_url)
+    if normalized:
+        return normalized
+    digest = hashlib.sha256(str(fallback_value).encode("utf-8")).hexdigest()
+    return f"urn:ai-daily:fallback:{digest}"
+
+
 def parse_datetime(value: str | None) -> str | None:
     if not value:
         return None

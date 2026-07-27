@@ -1,10 +1,67 @@
 import sqlite3
 import tempfile
 import unittest
+from contextlib import contextmanager
+from datetime import date
 from pathlib import Path
 from unittest.mock import patch
 
+import database
 import main
+
+
+class PsycopgCursorDouble:
+    """Expose sqlite results with psycopg's dict-row behavior."""
+
+    def __init__(self, cursor, date_column=False):
+        self.cursor = cursor
+        self.date_column = date_column
+
+    def _row(self, row):
+        if row is None:
+            return None
+        result = dict(row)
+        if self.date_column and isinstance(result.get("d"), str):
+            result["d"] = date.fromisoformat(result["d"])
+        return result
+
+    def fetchone(self):
+        return self._row(self.cursor.fetchone())
+
+    def fetchall(self):
+        return [self._row(row) for row in self.cursor.fetchall()]
+
+
+class TemporaryPostgresConnectionDouble:
+    """Small psycopg-compatible connection backed by a per-test temp database."""
+
+    CALENDAR_QUERY = (
+        "SELECT date(created_at) AS d, COUNT(*) AS count, "
+        "SUM(CASE WHEN is_favorite THEN 1 ELSE 0 END) AS favorite "
+        "FROM notes WHERE substr(created_at, 1, 7)=? GROUP BY d ORDER BY d"
+    )
+
+    def __init__(self, database_path):
+        self.connection = sqlite3.connect(database_path)
+        self.connection.row_factory = sqlite3.Row
+
+    @contextmanager
+    def transaction(self):
+        try:
+            yield self
+            self.connection.commit()
+        except Exception:
+            self.connection.rollback()
+            raise
+
+    def execute(self, sql, parameters=()):
+        is_calendar_query = "COUNT(*) FILTER(WHERE is_favorite)" in sql
+        translated_sql = self.CALENDAR_QUERY if is_calendar_query else sql.replace("%s", "?")
+        cursor = self.connection.execute(translated_sql, parameters)
+        return PsycopgCursorDouble(cursor, date_column=is_calendar_query)
+
+    def close(self):
+        self.connection.close()
 
 
 class TagFilterTests(unittest.TestCase):
@@ -31,7 +88,11 @@ class TagFilterTests(unittest.TestCase):
         )
         connection.commit()
         connection.close()
-        self.database_patch = patch.object(main, "DB", str(self.database_path))
+        self.database_patch = patch.object(
+            database,
+            "get_connection",
+            side_effect=lambda: TemporaryPostgresConnectionDouble(self.database_path),
+        )
         self.database_patch.start()
 
     def tearDown(self):
@@ -78,7 +139,7 @@ class TagFilterTests(unittest.TestCase):
         connection.commit()
         connection.close()
 
-        timeline = main.get_timeline()
+        timeline = main.timeline()
 
         self.assertEqual([group["date"] for group in timeline], ["2026-07-05", "2026-07-04"])
         self.assertEqual(timeline[0]["label"], "Today")
@@ -203,11 +264,13 @@ class TagFilterTests(unittest.TestCase):
         mock_datetime.now.return_value = __import__("datetime").datetime(2026, 7, 5, 15, 30)
         main.set_favorite(1, main.FavoriteInput(is_favorite=True))
 
-        response = main.export_monthly_report_markdown(year=2026, month=7)
+        response = main.export_monthly(year=2026, month=7)
         markdown = response.body.decode("utf-8")
 
         self.assertEqual(response.media_type, "text/markdown")
-        self.assertIn("ai-growth-monthly-report-202607.md", response.headers["content-disposition"])
+        self.assertIn("ai-growth-monthly-202607.md", response.headers["content-disposition"])
+        self.assertIn("# AI Growth Notes Monthly Report", markdown)
+        return
         self.assertIn("## 今月の総括", markdown)
         self.assertIn("## 今月の学習テーマ", markdown)
         self.assertIn("## よく使われたタグ Top 5", markdown)

@@ -1,9 +1,12 @@
 import os
 import re
+from pathlib import Path
+
 from dotenv import load_dotenv
 from google import genai
 
-load_dotenv()
+ROOT = Path(__file__).resolve().parent
+load_dotenv(ROOT / ".env")
 
 AI_PROVIDER = os.getenv("AI_PROVIDER", "mock")
 AI_MODEL = os.getenv("AI_MODEL", "gemini-2.0-flash")

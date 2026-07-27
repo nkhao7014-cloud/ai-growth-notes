@@ -1,5 +1,13 @@
 # Roadmap
 
+## v1.4 完了
+
+- Neon PostgreSQL、Render、単一ユーザー認証、CSRF、SQLite migration
+
+## 今後
+
+- 共有rate limit backend、CSP nonce、定期backup自動化、監視強化
+
 ## v1.3
 
 - AI Daily（公式Feed、学習、実践、Notes連携）

@@ -8,3 +8,8 @@
 - Loading、Empty、Error、Refresh、成功通知とモバイル表示を追加
 - 任意のGemini補強とAIなしのルールベースフォールバックを追加
 - Feed/API/DB/Notes連携の自動テストを追加
+# v1.4.0
+
+- Neon PostgreSQL専用Database LayerとSQLite read-only migrationを追加
+- 単一ユーザーArgon2認証、署名付きsession、CSRF、login rate limitを追加
+- Render Blueprint、health check、security headers、絶対path配信を追加
