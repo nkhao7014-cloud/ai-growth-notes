@@ -27,6 +27,10 @@
 .ai-news-source{color:var(--color-text-secondary);font-size:var(--font-sm)}
 .ai-news-summary{margin:var(--space-4) 0;color:var(--color-text-secondary)}
 .ai-news-why{margin:0 0 var(--space-4);padding:var(--space-3) var(--space-4);border-left:3px solid var(--color-primary);border-radius:var(--radius-sm);background:#fff;color:#42516c}
+.ai-news-points{margin:0 0 var(--space-4);padding:var(--space-4);border-radius:var(--radius-md);background:#fff}
+.ai-news-points>strong{display:block;margin-bottom:var(--space-2);color:var(--color-primary-dark)}
+.ai-news-points ul{margin:0;padding-left:var(--space-5)}
+.ai-news-points li+li{margin-top:var(--space-1)}
 .ai-news-actions{margin-top:auto;padding-top:var(--space-5)}
 .ai-news-actions .primary,.ai-news-actions .action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;text-decoration:none}
 .ai-category,.ai-status{display:inline-flex;align-items:center;min-height:28px;padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-size:var(--font-xs);font-weight:700}

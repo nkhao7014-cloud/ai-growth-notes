@@ -1,4 +1,12 @@
-# AI Growth Notes v1.4.0 Cloud Edition
+# AI Growth Notes v1.5.0 Cloud Edition
+
+## Ask My Notes
+
+ログイン後に `/assistant` を開くと、自分のNotes、AI Daily、AI Dailyの学習情報を横断して質問できます。回答の下には、実際に根拠として使われた記録だけが表示されます。
+
+Geminiを使う場合は `AI_PROVIDER=gemini` と `GEMINI_API_KEY` を設定します。AI未設定・timeout・Provider障害時も、関連記録の検索結果は利用できます。検索はPostgreSQLの限定Queryで行い、外部Vector DBやWeb検索は使用しません。
+
+詳しい使い方と制限は [Ask My Notes documentation](docs/assistant.md) を参照してください。
 
 FastAPI、Neon PostgreSQL、署名付きCookie認証で動作する単一ユーザー向け学習ノートです。アプリ本体はSQLiteを使用せず、旧 `notes.db` は専用scriptだけがread-onlyで参照します。
 

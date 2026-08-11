@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Ask My Notes | AI Growth Notes</title>
+  <link rel="stylesheet" href="/static/assistant.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/"><span aria-hidden="true">✦</span><strong>AI Growth Notes</strong></a>
+    <a class="back" href="/">Dashboardへ戻る</a>
+  </header>
+  <main>
+    <section class="hero">
+      <p class="eyebrow">YOUR LEARNING KNOWLEDGE</p>
+      <h1>Ask My Notes</h1>
+      <p>あなたの学習記録に、質問してみましょう。</p>
+    </section>
+    <section class="suggestions" aria-labelledby="suggestionTitle">
+      <div class="section-title"><h2 id="suggestionTitle">質問のヒント</h2><button id="clearHistory" type="button">履歴をクリア</button></div>
+      <div id="suggestionList" class="chips"><span class="loading">読み込み中…</span></div>
+    </section>
+    <section id="conversation" class="conversation" aria-live="polite">
+      <div id="emptyState" class="empty">
+        <span aria-hidden="true">✦</span>
+        <h2>学びを振り返る準備ができました</h2>
+        <p>NotesとAI Dailyから関連する記録を探し、根拠と一緒に回答します。</p>
+      </div>
+    </section>
+  </main>
+  <form id="askForm" class="composer">
+    <div class="composer-inner">
+      <label for="question">学習記録への質問</label>
+      <div class="input-row">
+        <textarea id="question" maxlength="2000" rows="2" required placeholder="例：最近AI Agentについて何を学びましたか？"></textarea>
+        <button id="sendButton" type="submit">質問する</button>
+      </div>
+      <p id="formStatus">Enterで送信・Shift+Enterで改行</p>
+    </div>
+  </form>
+  <script src="/static/assistant.js"></script>
+</body>
+</html>

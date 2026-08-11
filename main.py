@@ -20,6 +20,8 @@ from auth import (SecurityMiddleware, clear_failures, ensure_csrf, login_allowed
                   record_failure, safe_next, validate_settings, verify_csrf)
 from database import database_health_check, initialize_database, transaction
 from routers.ai_daily import router as ai_daily_router
+from routers.assistant import router as assistant_router
+from routers.assistant import router as assistant_router
 from services.export_service import build_markdown
 from services.weekly_report_service import build_weekly_report
 
@@ -35,12 +37,14 @@ def is_production() -> bool:
 async def lifespan(app: FastAPI):
     validate_settings(); initialize_database(); yield
 
-app = FastAPI(title="AI Growth Notes", version="1.4.0", lifespan=lifespan)
+app = FastAPI(title="AI Growth Notes", version="1.5.0", lifespan=lifespan)
 app.add_middleware(SecurityMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "missing-at-import"),
                    session_cookie="agn_session", max_age=int(os.getenv("SESSION_MAX_AGE", "604800")),
                    same_site="lax", https_only=is_production())
 app.include_router(ai_daily_router)
+app.include_router(assistant_router)
+app.include_router(assistant_router)
 
 class NoteInput(BaseModel): text: str
 class FavoriteInput(BaseModel): is_favorite: bool
@@ -184,3 +188,7 @@ app.mount("/static",StaticFiles(directory=str(ROOT/"static")),name="static")
 def home(): return FileResponse(ROOT/"static"/"index.html")
 @app.get("/ai-daily")
 def ai_daily(): return FileResponse(ROOT/"static"/"index.html")
+@app.get("/assistant")
+def assistant_page(): return FileResponse(ROOT/"static"/"assistant.html")
+@app.get("/assistant")
+def assistant_page(): return FileResponse(ROOT/"static"/"assistant.html")

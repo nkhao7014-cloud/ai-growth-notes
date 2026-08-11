@@ -325,6 +325,11 @@
     @media(max-width:390px){:root{--page-padding:12px}.brand{gap:8px}.brand-mark{width:38px;height:38px;font-size:20px}.brand h1{font-size:18px}.growth-weather-pill{padding:0 10px}.growth-weather-icon{display:none}.card{padding:18px;border-radius:17px}.stats{gap:10px}.stat{padding:15px}.stat-label{font-size:14px!important}.stat b{font-size:32px}.donut-layout{grid-template-columns:1fr}.section-head{align-items:flex-start}.section-head h2{font-size:20px}}
   </style>
   <link rel="stylesheet" href="/static/ai-daily.css">
+  <style>
+    .assistant-nav-link{position:absolute;top:112px;right:var(--page-padding,32px);z-index:4;padding:9px 14px;border:1px solid #cfdcff;border-radius:999px;color:#164fc9;background:#f1f5ff;font-size:12px;font-weight:800;box-shadow:0 5px 16px rgba(36,81,170,.08)}
+    .assistant-nav-link:hover{background:#e6eeff}
+    @media(max-width:768px){.assistant-nav-link{position:fixed;right:14px;bottom:78px;top:auto;padding:11px 14px;background:#fff;box-shadow:0 8px 24px rgba(25,57,119,.18)}}
+  </style>
 </head>
 <body>
 <main class="shell">
@@ -340,6 +345,7 @@
     <div class="head-tools header-actions"><button class="icon-button action-button mobile-search-toggle" id="searchToggle" type="button" aria-label="検索を開く" aria-controls="searchPanel" aria-expanded="false">⌕</button><label class="search-wrap" id="searchPanel"><span class="sr-only">ノートを検索</span><input class="header-search search-input" id="searchInput" type="search" aria-label="ノートを検索" placeholder="ノートを検索…" autocomplete="off"><kbd class="shortcut" aria-hidden="true">⌘K</kbd></label><button class="icon-button action-button" type="button" aria-label="通知">◌</button><span class="avatar" role="img" aria-label="ユーザー N">N</span></div>
   </header>
   <nav class="tabs" aria-label="メインナビゲーション"><button class="tab nav-tab active" data-view="dashboard"><span class="tab-icon">♜</span>Dashboard</button><button class="tab nav-tab" data-view="timeline"><span class="tab-icon">◷</span>Timeline</button><button class="tab nav-tab" data-view="weekly"><span class="tab-icon">▦</span>Weekly Report</button><button class="tab nav-tab" data-view="monthly"><span class="tab-icon">▣</span>Monthly Report</button><button class="tab nav-tab" data-view="export"><span class="tab-icon">▣</span>Markdown Export</button></nav>
+  <a class="assistant-nav-link" href="/assistant" aria-label="Ask My Notesを開く">✨ Ask My Notes</a>
   <div class="view" id="dashboardView">
     <section class="card app-card editor quick-note" id="quickNote" aria-labelledby="quickNoteTitle"><div class="section-head"><div><div class="eyebrow">Quick Note</div><h2 id="quickNoteTitle">今の気づきを残す</h2></div><span class="note-date">Ctrl / ⌘ + Enter で保存</span></div><label class="sr-only" for="noteInput">今日学んだことや気づき</label><textarea id="noteInput" rows="4" maxlength="5000" placeholder="今日学んだことや、ふと思ったことを書いてください…"></textarea><div class="quick-note-footer"><span class="save-status" id="saveStatus" role="status" aria-live="polite"></span><button class="primary action-button" id="saveButton" type="button">保存してAI整理</button></div></section>
     <section class="card app-card today-notes" aria-labelledby="todayNotesTitle"><div class="section-head"><div><div class="eyebrow">Today</div><h2 id="todayNotesTitle">今日のノート</h2></div><span class="note-count" id="todayNoteCount">0件</span></div><div class="notes" id="notesList"></div></section>

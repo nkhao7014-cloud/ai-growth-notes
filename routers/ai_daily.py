@@ -5,7 +5,8 @@ from datetime import date
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from pydantic import BaseModel
 from database import transaction
-from services.ai_daily_service import get_daily, refresh
+from services.ai_daily_service import backfill_japanese_content, get_daily, refresh
+from services.ai_daily_translation_service import translation_provider_status
 
 router = APIRouter(prefix="/api/ai-daily", tags=["ai-daily"])
 _refresh_lock = threading.Lock(); _last_refresh_failed = False
@@ -31,6 +32,14 @@ def refresh_ai_daily(response: Response):
     _last_refresh_failed = result["failed_feeds"] > 0
     if result["successful_feeds"] == 0: response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return result
+
+@router.post("/backfill-japanese")
+def backfill_japanese(limit: int = Query(20, ge=1, le=50), dry_run: bool = Query(False)):
+    return backfill_japanese_content(limit, dry_run=dry_run)
+
+@router.get("/translation-status")
+def translation_status():
+    return translation_provider_status()
 
 def _toggle(item_id: int, column: str, requested: bool | None):
     if column not in {"is_read", "is_favorite"}: raise HTTPException(400, "Invalid field")

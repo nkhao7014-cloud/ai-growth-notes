@@ -20,9 +20,11 @@ services:
       - key: APP_ENV
         value: production
       - key: AI_PROVIDER
-        value: mock
+        value: gemini
       - key: AI_MODEL
         value: gemini-2.0-flash
+      - key: ASSISTANT_AI_TIMEOUT_SECONDS
+        value: "15"
       - key: PYTHON_VERSION
         value: 3.12.8
       - key: SESSION_MAX_AGE

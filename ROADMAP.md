@@ -1,5 +1,19 @@
 # Roadmap
 
+## v1.5 完了
+
+- Ask My Notes MVP
+- PostgreSQLベースのRetrieval Interface
+- Notes / AI Daily / Learning Edition横断検索
+- Grounded answer、References、AIなしFallback、軽量ローカル履歴
+
+## v1.6候補
+
+- PostgreSQL Full Text Search rankingの強化
+- Retrieval評価データセットと引用精度メトリクス
+- pgvector / Embeddingを同じRetrieval Interfaceの実装として選択追加
+- 会話履歴の任意サーバー保存と期間・source UI filter
+
 ## v1.4 完了
 
 - Neon PostgreSQL、Render、単一ユーザー認証、CSRF、SQLite migration

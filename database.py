@@ -20,7 +20,6 @@ CREATE TABLE IF NOT EXISTS notes (
 );
 CREATE INDEX IF NOT EXISTS ix_notes_created_at ON notes(created_at DESC);
 CREATE INDEX IF NOT EXISTS ix_notes_favorite ON notes(is_favorite) WHERE is_favorite;
-
 CREATE TABLE IF NOT EXISTS ai_daily_items (
     id BIGSERIAL PRIMARY KEY,
     external_id TEXT,
@@ -33,6 +32,11 @@ CREATE TABLE IF NOT EXISTS ai_daily_items (
     category TEXT NOT NULL,
     summary TEXT NOT NULL,
     why_it_matters TEXT NOT NULL,
+    title_ja TEXT,
+    summary_ja TEXT,
+    why_it_matters_ja TEXT,
+    key_points_ja JSONB,
+    translated_at TIMESTAMPTZ,
     tags JSONB NOT NULL DEFAULT '[]'::jsonb,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
@@ -41,6 +45,11 @@ CREATE TABLE IF NOT EXISTS ai_daily_items (
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE ai_daily_items ADD COLUMN IF NOT EXISTS title_ja TEXT;
+ALTER TABLE ai_daily_items ADD COLUMN IF NOT EXISTS summary_ja TEXT;
+ALTER TABLE ai_daily_items ADD COLUMN IF NOT EXISTS why_it_matters_ja TEXT;
+ALTER TABLE ai_daily_items ADD COLUMN IF NOT EXISTS key_points_ja JSONB;
+ALTER TABLE ai_daily_items ADD COLUMN IF NOT EXISTS translated_at TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS ux_ai_daily_normalized_url ON ai_daily_items(normalized_url);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_ai_daily_fallback_key ON ai_daily_items(fallback_key);
 CREATE UNIQUE INDEX IF NOT EXISTS ux_ai_daily_external_id ON ai_daily_items(source_name, external_id)
